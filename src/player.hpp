@@ -13,6 +13,7 @@ private:
     std::vector<Piece> pieces;
 
 public:
-    Player(bool& color, std::string& name);
-    void initializePieces();
+    Player(bool color, std::string name);
+    void     initializePieces();
+    Position play(Position pos);
 };

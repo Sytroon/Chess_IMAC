@@ -1,7 +1,11 @@
 #include "board.hpp"
+#include <cstddef>
 
 Board::Board()
-    : size(8), board(size, std::vector<bool>(size, false)) {};
+    : size(8), board(size, std::vector<bool>(size, false)), visualBoard(size, std::vector<std::string>(size, ""))
+{
+    prepareBoard();
+};
 
 void Board::initializeBoard()
 {
@@ -20,7 +24,7 @@ void Board::initializeBoard()
             }
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{1.f, 0.f, 0.f, 0.5f});
             ImGui::PushID(id);
-            board[i][j] = ImGui::Button("", ImVec2{50.f, 50.f});
+            board[i][j] = ImGui::Button(visualBoard[i][j].c_str(), ImVec2{50.f, 50.f});
             if (j < (size - 1))
             {
                 ImGui::SameLine();
@@ -29,5 +33,52 @@ void Board::initializeBoard()
             ImGui::PopID();
             ImGui::PopStyleColor(2);
         }
+    }
+}
+
+void Board::prepareBoard()
+{
+    visualBoard[0] = {
+        "\u2656", "\u2658", "\u2657", "\u2655",
+        "\u2654", "\u2657", "\u2658", "\u2656"
+    };
+
+    visualBoard[1] = {
+        "\u2659", "\u2659", "\u2659", "\u2659",
+        "\u2659", "\u2659", "\u2659", "\u2659"
+    };
+
+    visualBoard[6] = {
+        "\u265F", "\u265F", "\u265F", "\u265F",
+        "\u265F", "\u265F", "\u265F", "\u265F"
+    };
+
+    visualBoard[7] = {
+        "\u265C", "\u265E", "\u265D", "\u265B",
+        "\u265A", "\u265D", "\u265E", "\u265C"
+    };
+}
+
+Position Board::checkClick()
+{
+    for (int i = 0; i < size; ++i)
+    {
+        for (int j = 0; j < size; ++j)
+        {
+            if (board[i][j])
+            {
+                return Position(i, j);
+            }
+        }
+    }
+}
+
+void Board::playTurn()
+{
+    bool wrongPos = true;
+    while (wrongPos)
+    {
+        // Position pos = checkClick();
+        // for (Piece)
     }
 }

@@ -1,7 +1,7 @@
 #include "player.hpp"
 #include "piece.hpp"
 
-Player::Player(bool& color, std::string& name)
+Player::Player(bool color, std::string name)
     : color(color), name(name) {};
 
 void Player::initializePieces()
@@ -47,3 +47,7 @@ void Player::initializePieces()
         pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 7});
     }
 };
+
+Position Player::play(Position pos)
+{
+}

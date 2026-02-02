@@ -3,12 +3,8 @@
 #include <imgui.h>
 #include <iostream>
 #include <string>
+#include "board.hpp"
 #include "quick_imgui/quick_imgui.hpp"
-
-struct Position {
-    int pos_x;
-    int pos_y;
-};
 
 class Piece {
 private:
@@ -20,4 +16,5 @@ public:
     Piece(bool color, std::string const& label, Position const& pos);
     void     setPosition(Position const& pos);
     Position getPosition();
+    void     move();
 };
