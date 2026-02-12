@@ -1,95 +1,33 @@
-#include <imgui.h>
 #include <iostream>
 #include <string>
 #include "board.hpp"
+#include "player.hpp"
 #include "quick_imgui/quick_imgui.hpp"
 
 int main()
 {
-    float value{0.f};
-    // int    id   = 1;
-    // size_t size = 8;
+    // 1. Initialisation des données (AVANT la boucle)
+    std::cout << "Veuillez entrer votre nom : ";
+    std::string name;
+    // std::cin >> name; // Commenté pour tester plus vite
+    name = "Joueur 1";
 
-    // std::vector<std::vector<bool>> board(
-    //     size, std::vector<bool>(size, false)
-    // );
-    // std::vector<std::vector<char*>> labelText(
-    //     size, std::vector<char*>(size, "")
-    // );
+    Player p1(true, name); // Supposons que Player est défini dans player.hpp
 
-    quick_imgui::loop(
-        "Chess",
-        {
-            .init = [&]() {},
-            .loop =
-                [&]() {
-                    ImGui::ShowDemoWindow(); // This opens a window which shows tons of examples of what you can do with ImGui. You should check it out! Also, you can use the "Item Picker" in the top menu of that demo window: then click on any widget and it will show you the corresponding code directly in your IDE!
+    // Création de l'échiquier UNE SEULE FOIS ici
+    Board chessBoard;
 
-                    ImGui::Begin("Example");
+    // 2. Lancement de l'interface
+    quick_imgui::loop("Chess Game", {.init = [&]() {}, .loop = [&]() {
+            ImGui::Begin("Partie en cours");
+            
+            ImGui::Text("Tour de : %s", p1.getName().c_str());
+            ImGui::Separator();
 
-                    Board board = Board();
-                    board.initializeBoard();
+            // On délègue tout l'affichage à la classe Board
+            chessBoard.draw();
 
-                    // labelText[0][0] = "R";
-                    // labelText[0][1] = "k";
-                    // labelText[0][2] = "B";
-                    // labelText[0][3] = "Q";
-                    // labelText[0][4] = "K";
-                    // labelText[0][5] = "B";
-                    // labelText[0][6] = "k";
-                    // labelText[0][7] = "R";
+            ImGui::End(); }});
 
-                    // labelText[1][0] = "P";
-                    // labelText[1][1] = "P";
-                    // labelText[1][2] = "P";
-                    // labelText[1][3] = "P";
-                    // labelText[1][4] = "P";
-                    // labelText[1][5] = "P";
-                    // labelText[1][6] = "P";
-                    // labelText[1][7] = "P";
-
-                    // labelText[7][0] = "R";
-                    // labelText[7][1] = "k";
-                    // labelText[7][2] = "B";
-                    // labelText[7][3] = "Q";
-                    // labelText[7][4] = "K";
-                    // labelText[7][5] = "B";
-                    // labelText[7][6] = "k";
-                    // labelText[7][7] = "R";
-
-                    // labelText[6][0] = "P";
-                    // labelText[6][1] = "P";
-                    // labelText[6][2] = "P";
-                    // labelText[6][3] = "P";
-                    // labelText[6][4] = "P";
-                    // labelText[6][5] = "P";
-                    // labelText[6][6] = "P";
-                    // labelText[6][7] = "P";
-
-                    // ImGui::SliderFloat("My Value", &value, 0.f, 3.f);
-
-                    // if (ImGui::Button("1", ImVec2{50.f, 50.f}))
-                    //     std::cout << "Clicked button 1\n";
-                    // ImGui::SameLine(); // Draw the next ImGui widget on the same line as the previous one. Otherwise it would be below it
-
-                    // ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{1.f, 0.f, 0.f, 1.f}); // Changes the color of all buttons until we call ImGui::PopStyleColor(). There is also ImGuiCol_ButtonActive and ImGuiCol_ButtonHovered
-
-                    // ImGui::PushID(2); // When some ImGui items have the same label (for exemple the next two buttons are labeled "Yo") ImGui needs you to specify an ID so that it can distinguish them. It can be an int, a pointer, a string, etc.
-                    //                   // You will definitely run into this when you create a button for each of your chess pieces, so remember to give them an ID!
-                    // if (ImGui::Button("Yo", ImVec2{50.f, 50.f}))
-                    //     std::cout << "Clicked button 2\n";
-                    // ImGui::PopID(); // Then pop the id you pushed after you created the widget
-
-                    // ImGui::SameLine();
-                    // ImGui::PushID(3);
-                    // if (ImGui::Button("Yo", ImVec2{50.f, 50.f}))
-                    //     std::cout << "Clicked button 3\n";
-                    // ImGui::PopID();
-
-                    // ImGui::PopStyleColor();
-
-                    ImGui::End();
-                },
-        }
-    );
+    return 0;
 }

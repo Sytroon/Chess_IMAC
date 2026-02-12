@@ -1,23 +1,18 @@
 #pragma once
-
-#include <imgui.h>
-#include <iostream>
 #include <string>
-#include "quick_imgui/quick_imgui.hpp"
 
-struct Position {
-    int pos_x;
-    int pos_y;
-};
+enum class PieceType { None, Pawn, Rook, Knight, Bishop, Queen, King };
+enum class PieceColor { None, White, Black };
 
 class Piece {
-private:
-    bool        color; // noir = false, white = true
-    std::string label;
-    Position    position;
-
 public:
-    Piece(bool color, std::string const& label, Position const& pos);
-    void     setPosition(Position const& pos);
-    Position getPosition();
+    PieceType type = PieceType::None;
+    PieceColor color = PieceColor::None;
+
+    // Constructeurs
+    Piece() = default;
+    Piece(PieceType t, PieceColor c);
+
+    // Pour récupérer le caractère à afficher (ex: "K", "P")
+    const char* getSymbol() const;
 };

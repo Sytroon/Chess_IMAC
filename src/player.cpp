@@ -1,49 +1,31 @@
 #include "player.hpp"
-#include "piece.hpp"
+#include <iostream>
 
-Player::Player(bool& color, std::string& name)
-    : color(color), name(name) {};
-
-void Player::initializePieces()
+Player::Player(bool isWhite, std::string playerName) 
+    : name(playerName), isHuman(true), score(0) 
 {
-    if (color)
-    {
-        pieces.emplace_back(color, "R", Position{.pos_x = 0, .pos_y = 0});
-        pieces.emplace_back(color, "k", Position{.pos_x = 0, .pos_y = 1});
-        pieces.emplace_back(color, "B", Position{.pos_x = 0, .pos_y = 2});
-        pieces.emplace_back(color, "Q", Position{.pos_x = 0, .pos_y = 3});
-        pieces.emplace_back(color, "K", Position{.pos_x = 0, .pos_y = 4});
-        pieces.emplace_back(color, "B", Position{.pos_x = 0, .pos_y = 5});
-        pieces.emplace_back(color, "k", Position{.pos_x = 0, .pos_y = 6});
-        pieces.emplace_back(color, "R", Position{.pos_x = 0, .pos_y = 7});
-
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 0});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 1});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 2});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 3});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 4});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 5});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 6});
-        pieces.emplace_back(color, "p", Position{.pos_x = 1, .pos_y = 7});
+    // On définit la couleur en fonction du booléen
+    if (isWhite) {
+        color = PieceColor::White;
+    } else {
+        color = PieceColor::Black;
     }
-    else
-    {
-        pieces.emplace_back(color, "R", Position{.pos_x = 7, .pos_y = 0});
-        pieces.emplace_back(color, "k", Position{.pos_x = 7, .pos_y = 1});
-        pieces.emplace_back(color, "B", Position{.pos_x = 7, .pos_y = 2});
-        pieces.emplace_back(color, "Q", Position{.pos_x = 7, .pos_y = 3});
-        pieces.emplace_back(color, "K", Position{.pos_x = 7, .pos_y = 4});
-        pieces.emplace_back(color, "B", Position{.pos_x = 7, .pos_y = 5});
-        pieces.emplace_back(color, "k", Position{.pos_x = 7, .pos_y = 6});
-        pieces.emplace_back(color, "R", Position{.pos_x = 7, .pos_y = 7});
+}
 
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 0});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 1});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 2});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 3});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 4});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 5});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 6});
-        pieces.emplace_back(color, "p", Position{.pos_x = 6, .pos_y = 7});
-    }
-};
+std::string Player::getName() const {
+    return name;
+}
+
+PieceColor Player::getColor() const {
+    return color;
+}
+
+bool Player::isWhiteSide() const {
+    return color == PieceColor::White;
+}
+
+void Player::printInfo() const {
+    std::cout << "Joueur: " << name 
+              << " | Couleur: " << (isWhiteSide() ? "Blanc" : "Noir") 
+              << std::endl;
+}
