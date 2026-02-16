@@ -11,6 +11,7 @@ private:
     std::array<Piece, 64> squares;
     std::vector<int> possibleMoves;
     int selectedSquareIndex = -1;
+    PieceColor currentTurn;
 
     // --- FONCTIONS UTILITAIRES D'OPTIMISATION ---
     
@@ -32,4 +33,5 @@ public:
     void draw();
     void movePiece(int from, int to);
     void calculatePossibleMoves(int index);
+    PieceColor getCurrentTurn() const { return currentTurn; }
 };

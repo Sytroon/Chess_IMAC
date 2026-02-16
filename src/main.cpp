@@ -19,12 +19,30 @@ int main()
 
     // 2. Lancement de l'interface
     quick_imgui::loop("Chess Game", {.init = [&]() {}, .loop = [&]() {
-            ImGui::Begin("Partie en cours");
+            // ImGui::Begin("Partie en cours");
             
-            ImGui::Text("Tour de : %s", p1.getName().c_str());
+            // ImGui::Text("Tour de : %s", p1.getName().c_str());
+            // ImGui::Separator();
+
+            // // On délègue tout l'affichage à la classe Board
+            
+
+            
+            // --- Fenêtre de droite : Infos Joueurs ---
+            ImGui::Begin("Informations");
+            
+            ImGui::Text("Joueur 1 (Blanc): Kasparov");
+            ImGui::Text("Joueur 2 (Noir): Deep Blue");
             ImGui::Separator();
 
-            // On délègue tout l'affichage à la classe Board
+            // Affichage dynamique du tour
+            ImGui::Text("Tour actuel : ");
+            ImGui::SameLine();
+            if (chessBoard.getCurrentTurn() == PieceColor::White) {
+                ImGui::TextColored(ImVec4(0.f, 1.f, 0.f, 1.f), "BLANCS"); // Vert
+            } else {
+                ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "NOIRS");  // Rouge
+            }
             chessBoard.draw();
 
             ImGui::End(); }});

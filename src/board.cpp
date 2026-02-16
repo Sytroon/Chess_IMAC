@@ -41,6 +41,11 @@ void Board::initialize()
 
     squares[4]  = Piece(PieceType::King, PieceColor::Black);
     squares[60] = Piece(PieceType::King, PieceColor::White);
+
+    // Les Blancs commencent
+    currentTurn = PieceColor::White; 
+    selectedSquareIndex = -1;
+    possibleMoves.clear();
 }
 
 // void Board::movePiece(int from, int to) {
@@ -222,7 +227,17 @@ void Board::movePiece(int from, int to)
     {
         squares[to]   = squares[from];
         squares[from] = Piece(); // Vide l'ancienne case
+
+         // 2. CHANGEMENT DE TOUR (Vérifie bien que tu as ajouté ceci !)
+        if (currentTurn == PieceColor::White) {
+            currentTurn = PieceColor::Black;
+        } else {
+            currentTurn = PieceColor::White;
+        }
     }
+
+   
+
 
     // Après un mouvement, on désélectionne tout
     possibleMoves.clear();
@@ -275,39 +290,34 @@ void Board::draw()
             }
 
             // --- INTERACTION ---
-            if (ImGui::Button(squares[index].getSymbol(), buttonSize))
-            {
-                if (selectedSquareIndex == -1)
-                {
-                    // Sélectionner une pièce
-                    if (squares[index].type != PieceType::None)
-                    {
-                        selectedSquareIndex = index;
-                        calculatePossibleMoves(index); // <--- CALCULER LES COUPS ICI
-                    }
-                }
-                else
-                {
-                    // Si on clique sur la même case, on désélectionne
-                    if (index == selectedSquareIndex)
-                    {
-                        selectedSquareIndex = -1;
-                        possibleMoves.clear();
-                    }
-                    // Si on clique sur un mouvement possible -> on bouge
-                    else if (isPossibleMove)
-                    {
-                        movePiece(selectedSquareIndex, index);
-                    }
-                    // Si on clique ailleurs (invalide), on change la sélection
-                    else if (squares[index].color == squares[selectedSquareIndex].color)
-                    {
+            if (ImGui::Button(squares[index].getSymbol(), buttonSize)) {
+                
+                if (selectedSquareIndex == -1) {
+                    // 1. Sélectionner une pièce SEULEMENT si c'est la bonne couleur
+                    if (squares[index].type != PieceType::None && squares[index].color == currentTurn) {
                         selectedSquareIndex = index;
                         calculatePossibleMoves(index);
                     }
-                    else
-                    {
-                        // Clic dans le vide invalide : on désélectionne
+                } else {
+                    // Si une case est déjà sélectionnée :
+                    
+                    if (index == selectedSquareIndex) {
+                        // On clique sur la même pièce : désélectionner
+                        selectedSquareIndex = -1;
+                        possibleMoves.clear();
+                    }
+                    else if (isPossibleMove) {
+                        // On clique sur un mouvement valide : déplacer
+                        movePiece(selectedSquareIndex, index);
+                    }
+                    else if (squares[index].color == currentTurn) {
+                        // NOUVEAU (Ergonomie) : Si on clique sur une AUTRE de ses propres pièces, 
+                        // on change la sélection directement sans devoir désélectionner avant.
+                        selectedSquareIndex = index;
+                        calculatePossibleMoves(index);
+                    }
+                    else {
+                        // Clic invalide (case vide non accessible ou pièce ennemie non prenable)
                         selectedSquareIndex = -1;
                         possibleMoves.clear();
                     }
