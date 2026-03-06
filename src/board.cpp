@@ -1,84 +1,60 @@
-#include "board.hpp"
-#include <cstddef>
+#include "Board.hpp"
+#include "piece.hpp"
 
 Board::Board()
-    : size(8), board(size, std::vector<bool>(size, false)), visualBoard(size, std::vector<std::string>(size, ""))
 {
-    prepareBoard();
-};
+    reset();
+}
 
-void Board::initializeBoard()
+void Board::reset()
 {
-    int id = 1;
-    for (size_t i = 0; i < size; ++i)
+    for (auto& row : grid)
+        for (auto& cell : row)
+            cell.reset();
+
+    for (int i = 0; i < 8; ++i)
     {
-        for (size_t j = 0; j < size; ++j)
-        {
-            if ((i + j) % 2 == 0)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{251.f / 255.f, 194.f / 255.f, 115.f / 255.f, 1.f});
-            }
-            else
-            {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{149.f / 255.f, 83.f / 255.f, 59.f / 255.f, 1.f});
-            }
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{1.f, 0.f, 0.f, 0.5f});
-            ImGui::PushID(id);
-            board[i][j] = ImGui::Button(visualBoard[i][j].c_str(), ImVec2{50.f, 50.f});
-            if (j < (size - 1))
-            {
-                ImGui::SameLine();
-            }
-            ++id;
-            ImGui::PopID();
-            ImGui::PopStyleColor(2);
-        }
+        grid[1][i] = std::make_unique<Pawn>(Color::Black, Position{1, i});
+        grid[6][i] = std::make_unique<Pawn>(Color::White, Position{6, i});
+    }
+    // Remplis ici les Tours (0,0 / 0,7), Cavaliers, Fous, Reine (0,3) et Roi (0,4)...
+    grid[0][0] = std::make_unique<Rook>(Color::Black, Position{0, 0});
+    grid[0][7] = std::make_unique<Rook>(Color::Black, Position{0, 7});
+    grid[0][1] = std::make_unique<Knight>(Color::Black, Position{0, 1});
+    grid[0][6] = std::make_unique<Knight>(Color::Black, Position{0, 6});
+    grid[0][2] = std::make_unique<Bishop>(Color::Black, Position{0, 2});
+    grid[0][5] = std::make_unique<Bishop>(Color::Black, Position{0, 5});
+    grid[0][3] = std::make_unique<Queen>(Color::Black, Position{0, 3});
+    grid[0][4] = std::make_unique<King>(Color::Black, Position{0, 4});
+
+    grid[7][0] = std::make_unique<Rook>(Color::White, Position{7, 0});
+    grid[7][7] = std::make_unique<Rook>(Color::White, Position{7, 7});
+    grid[7][1] = std::make_unique<Knight>(Color::White, Position{7, 1});
+    grid[7][6] = std::make_unique<Knight>(Color::White, Position{7, 6});
+    grid[7][2] = std::make_unique<Bishop>(Color::White, Position{7, 2});
+    grid[7][5] = std::make_unique<Bishop>(Color::White, Position{7, 5});
+    grid[7][3] = std::make_unique<Queen>(Color::White, Position{7, 3});
+    grid[7][4] = std::make_unique<King>(Color::White, Position{7, 4});
+}
+
+Piece* Board::getPiece(Position p) const
+{
+    return grid[p.x][p.y].get();
+}
+
+void Board::movePiece(Position from, Position to)
+{
+    if (grid[from.x][from.y])
+    {
+        grid[to.x][to.y] = std::move(grid[from.x][from.y]);
+        grid[to.x][to.y]->setPos(to);
     }
 }
 
-void Board::prepareBoard()
+void Board::setPiece(Position p, std::unique_ptr<Piece> newPiece)
 {
-    visualBoard[0] = {
-        "\u2656", "\u2658", "\u2657", "\u2655",
-        "\u2654", "\u2657", "\u2658", "\u2656"
-    };
-
-    visualBoard[1] = {
-        "\u2659", "\u2659", "\u2659", "\u2659",
-        "\u2659", "\u2659", "\u2659", "\u2659"
-    };
-
-    visualBoard[6] = {
-        "\u265F", "\u265F", "\u265F", "\u265F",
-        "\u265F", "\u265F", "\u265F", "\u265F"
-    };
-
-    visualBoard[7] = {
-        "\u265C", "\u265E", "\u265D", "\u265B",
-        "\u265A", "\u265D", "\u265E", "\u265C"
-    };
-}
-
-Position Board::checkClick()
-{
-    for (int i = 0; i < size; ++i)
+    if (isInside(p))
     {
-        for (int j = 0; j < size; ++j)
-        {
-            if (board[i][j])
-            {
-                return Position(i, j);
-            }
-        }
-    }
-}
-
-void Board::playTurn()
-{
-    bool wrongPos = true;
-    while (wrongPos)
-    {
-        // Position pos = checkClick();
-        // for (Piece)
+        grid[p.x][p.y] = std::move(newPiece);
     }
 }

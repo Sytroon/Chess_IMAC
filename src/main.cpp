@@ -1,48 +1,58 @@
-#include <imgui.h>
 #include <iostream>
-#include <string>
-#include "board.hpp"
-#include "player.hpp"
+#include "ChessView.hpp"
+#include "Game.hpp"
 #include "quick_imgui/quick_imgui.hpp"
+
+// On déclare le pointeur de police en dehors pour y avoir accès dans la boucle
+ImFont* chessFont = nullptr;
 
 int main()
 {
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark(); // ou Classic / Light
-    ImGuiIO& io = ImGui::GetIO();
+    Game      chessGame;
+    ChessView view;
 
-    static const ImWchar chessRanges[] = {0x2654, 0x265F, 0};
+    quick_imgui::loop("Chess Project", {.init = [&]() {
+            // Ici, le contexte ImGui est créé, on peut charger la police !
+            ImGuiIO& io = ImGui::GetIO();
+    
+    // 1. Créer un constructeur de plage de glyphes (Glyph Ranges Builder)
+    static ImVector<ImWchar> ranges;
+    ImFontGlyphRangesBuilder builder;
+    
+    // Ajouter les caractères de base (Lettres, Chiffres, etc.)
+    builder.AddRanges(io.Fonts->GetGlyphRangesDefault()); 
+    
+    // Ajouter spécifiquement les échecs (\u2654 à \u265F)
+    static const ImWchar chessRanges[] = { 0x2654, 0x265F, 0 };
+    builder.AddRanges(chessRanges);
+    
+    // Construire la plage finale
+    builder.BuildRanges(&ranges);
 
-    ImFont* chessFont = io.Fonts->AddFontFromFileTTF(
-        "C:\\Windows\\Fonts\\seguisym.ttf",
-        32.0f,
-        nullptr,
-        chessRanges
-    );
+    // 2. Charger la police avec la plage combinée
+    // Utilise bien ranges.Data pour passer le tableau de caractères
+    chessFont = io.Fonts->AddFontFromFileTTF(
+        "C:/Users/hugo1/.!!HUGO/Font/freeserif/freeserif.ttf", 
+        40.0f, 
+        nullptr, 
+        ranges.Data
+            ); }, .loop = [&]() {
+            ImGui::Begin("Chess Board");
 
-    IM_ASSERT(chessFont);
+            // Affichage du tour
+            // ImGui::Text("Tour : %s", chessGame.getTurn() == Color::White ? "Blancs" : "Noirs");
+            
+            // On applique la police si elle a bien été chargée
+            if (chessFont) ImGui::PushFont(chessFont);
+            
+            // Affichage du tour
+            ImGui::Text("Tour : %s", chessGame.getTurn() == Color::White ? "Blancs" : "Noirs");
+            
+            view.draw(chessGame);
+            
+            if (chessFont) ImGui::PopFont();
 
-    float value{0.f};
+            ImGui::End(); }});
 
-    quick_imgui::loop(
-        "Chess",
-        {
-            .init = [&]() {},
-            .loop =
-                [&]() {
-                    // ImGui::ShowDemoWindow(); // This opens a window which shows tons of examples of what you can do with ImGui. You should check it out! Also, you can use the "Item Picker" in the top menu of that demo window: then click on any widget and it will show you the corresponding code directly in your IDE!
-
-                    ImGui::Begin("Example");
-
-                    Player player1 = Player(true, "p1");
-                    Player Player2 = Player(false, "p2");
-
-                    Board board = Board();
-                    board.initializeBoard();
-
-                    ImGui::End();
-                },
-        }
-    );
+    return 0;
 }
