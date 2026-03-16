@@ -1,49 +1,56 @@
 #include <iostream>
-#include <string>
-#include "board.hpp"
-#include "player.hpp"
+#include "ChessView.hpp"
+#include "Game.hpp"
 #include "quick_imgui/quick_imgui.hpp"
+
+// On déclare le pointeur de police en dehors pour y avoir accès dans la boucle
+ImFont* chessFont = nullptr;
 
 int main()
 {
-    // 1. Initialisation des données (AVANT la boucle)
-    std::cout << "Veuillez entrer votre nom : ";
-    std::string name;
-    // std::cin >> name; // Commenté pour tester plus vite
-    name = "Joueur 1";
+    Game      chessGame;
+    ChessView view;
 
-    Player p1(true, name); // Supposons que Player est défini dans player.hpp
+    quick_imgui::loop("Chess Project", {.init = [&]() {
+            // Ici, le contexte ImGui est créé, on peut charger la police !
+            ImGuiIO& io = ImGui::GetIO();
+    
+    // 1. Créer un constructeur de plage de glyphes (Glyph Ranges Builder)
+    static ImVector<ImWchar> ranges;
+    ImFontGlyphRangesBuilder builder;
+    
+    // Ajouter les caractères de base (Lettres, Chiffres, etc.)
+    builder.AddRanges(io.Fonts->GetGlyphRangesDefault()); 
+    
+    // Ajouter spécifiquement les échecs (\u2654 à \u265F)
+    static const ImWchar chessRanges[] = { 0x2654, 0x265F, 0 };
+    builder.AddRanges(chessRanges);
+    
+    // Construire la plage finale
+    builder.BuildRanges(&ranges);
 
-    // Création de l'échiquier UNE SEULE FOIS ici
-    Board chessBoard;
+    // 2. Charger la police avec la plage combinée
+    // Utilise bien ranges.Data pour passer le tableau de caractères
+    chessFont = io.Fonts->AddFontFromFileTTF(
+        "C:/Users/hugo1/.!!HUGO/Font/freeserif/freeserif.ttf", 
+        40.0f, 
+        nullptr, 
+        ranges.Data
+            ); }, .loop = [&]() {
+            ImGui::Begin("Chess Board");
 
-    // 2. Lancement de l'interface
-    quick_imgui::loop("Chess Game", {.init = [&]() {}, .loop = [&]() {
-            // ImGui::Begin("Partie en cours");
+            // Affichage du tour
+            // ImGui::Text("Tour : %s", chessGame.getTurn() == Color::White ? "Blancs" : "Noirs");
             
-            // ImGui::Text("Tour de : %s", p1.getName().c_str());
-            // ImGui::Separator();
-
-            // // On délègue tout l'affichage à la classe Board
+            // On applique la police si elle a bien été chargée
+            if (chessFont) ImGui::PushFont(chessFont);
             
-
+            // Affichage du tour
+            ImGui::Text("Tour : %s", chessGame.getTurn() == Color::White ? "Blancs" : "Noirs");
             
-            // --- Fenêtre de droite : Infos Joueurs ---
-            ImGui::Begin("Informations");
+            view.draw(chessGame);
             
-            ImGui::Text("Joueur 1 (Blanc): Kasparov");
-            ImGui::Text("Joueur 2 (Noir): Deep Blue");
-            ImGui::Separator();
-
-            // Affichage dynamique du tour
-            ImGui::Text("Tour actuel : ");
-            ImGui::SameLine();
-            if (chessBoard.getCurrentTurn() == PieceColor::White) {
-                ImGui::TextColored(ImVec4(0.f, 1.f, 0.f, 1.f), "BLANCS"); // Vert
-            } else {
-                ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "NOIRS");  // Rouge
-            }
-            chessBoard.draw();
+            if (chessFont) ImGui::PopFont();
 
             ImGui::End(); }});
 

@@ -1,37 +1,17 @@
 #pragma once
-#include <vector>
 #include <array>
-#include "piece.hpp"
-
-// Une structure simple pour définir une direction ou un décalage
-struct Offset { int x; int y; };
+#include <memory>
+#include "Piece.hpp"
 
 class Board {
 private:
-    std::array<Piece, 64> squares;
-    std::vector<int> possibleMoves;
-    int selectedSquareIndex = -1;
-    PieceColor currentTurn;
-
-    // --- FONCTIONS UTILITAIRES D'OPTIMISATION ---
-    
-    // Tente d'ajouter un mouvement. Retourne 'false' si on doit s'arrêter (obstacle/bord)
-    bool tryAddMove(int originIndex, int targetX, int targetY);
-
-    // Pour Tour, Fou, Reine : scanne dans une liste de directions
-    void generateSlidingMoves(int index, const std::vector<Offset>& directions);
-
-    // Pour Cavalier, Roi : vérifie une liste de cases cibles
-    void generateSteppingMoves(int index, const std::vector<Offset>& offsets);
-
-    // Pour le Pion (cas spécial)
-    void generatePawnMoves(int index);
+    std::array<std::array<std::unique_ptr<Piece>, 8>, 8> grid;
 
 public:
     Board();
-    void initialize();
-    void draw();
-    void movePiece(int from, int to);
-    void calculatePossibleMoves(int index);
-    PieceColor getCurrentTurn() const { return currentTurn; }
+    void   reset();
+    Piece* getPiece(Position p) const;
+    void   movePiece(Position from, Position to);
+    bool   isInside(Position p) const { return p.x >= 0 && p.x < 8 && p.y >= 0 && p.y < 8; }
+    void   setPiece(Position p, std::unique_ptr<Piece> newPiece);
 };
