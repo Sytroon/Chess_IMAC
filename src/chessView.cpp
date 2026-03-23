@@ -1,4 +1,4 @@
-#include "ChessView.hpp"
+#include "chessView.hpp"
 #include <imgui.h>
 #include "game.hpp"
 

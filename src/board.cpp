@@ -1,4 +1,4 @@
-#include "Board.hpp"
+#include "board.hpp"
 #include "piece.hpp"
 
 Board::Board()

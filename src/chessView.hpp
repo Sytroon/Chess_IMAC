@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include "Game.hpp"
+#include "game.hpp"
 
 
 class ChessView {

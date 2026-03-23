@@ -1,5 +1,5 @@
-#include "Piece.hpp"
-#include "Board.hpp"
+#include "piece.hpp"
+#include "board.hpp"
 
 Knight::Knight(Color c, Position p)
     : Piece(c, p, (c == Color::Black ? "\u2658" : "\u265E")) {}

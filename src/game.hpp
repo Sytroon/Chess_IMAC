@@ -1,5 +1,5 @@
 #pragma once
-#include "Board.hpp"
+#include "board.hpp"
 
 enum class GameState { Playing,
                        Promotion,

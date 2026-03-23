@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME})
 # Choose your C++ version
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
+
 # Enable many good warnings.
 # /WX and -Werror enable "warnings as errors": This means that your code won't compile if you have any warning.
 # This forces you to take warnings into account, which is a good practice because warnings are here for a reason and can save you from a lot of bugs!
@@ -43,3 +44,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 # Add quick-imgui library
 add_subdirectory(lib/quick_imgui)
 target_link_libraries(${PROJECT_NAME} PRIVATE quick_imgui::quick_imgui)
+
+
+add_subdirectory(lib/glimac)
+target_link_libraries(${PROJECT_NAME} PRIVATE glimac)

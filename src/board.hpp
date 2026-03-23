@@ -1,7 +1,7 @@
 #pragma once
 #include <array>
 #include <memory>
-#include "Piece.hpp"
+#include "piece.hpp"
 
 class Board {
 private:
