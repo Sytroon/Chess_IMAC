@@ -2,7 +2,7 @@
 #include "Board.hpp"
 
 Knight::Knight(Color c, Position p)
-    : Piece(c, p, (c == Color::Black ? "\u2658" : "\u265E")) {}
+    : Piece(c, p, (c == Color::Black ? "♘" : "♞")) {}
 
 std::vector<Position> Knight::getPossibleMoves(const Board& board) const
 {
@@ -25,11 +25,11 @@ std::vector<Position> Knight::getPossibleMoves(const Board& board) const
     return moves;
 }
 
-Pawn::Pawn(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2659" : "\u265F")) {}
-Rook::Rook(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2656" : "\u265C")) {}
-Bishop::Bishop(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2657" : "\u265D")) {}
-Queen::Queen(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2655" : "\u265B")) {}
-King::King(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2654" : "\u265A")) {}
+Pawn::Pawn(Color c, Position p) : Piece(c, p, (c == Color::Black ? "♙" : "♟")) {}
+Rook::Rook(Color c, Position p) : Piece(c, p, (c == Color::Black ? "♖" : "♜")) {}
+Bishop::Bishop(Color c, Position p) : Piece(c, p, (c == Color::Black ? "♗" : "♝")) {}
+Queen::Queen(Color c, Position p) : Piece(c, p, (c == Color::Black ? "♕" : "♛")) {}
+King::King(Color c, Position p) : Piece(c, p, (c == Color::Black ? "♔" : "♚")) {}
 
 std::vector<Position> Pawn::getPossibleMoves(const Board& board) const
 {

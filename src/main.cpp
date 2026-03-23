@@ -2,12 +2,16 @@
 #include "ChessView.hpp"
 #include "Game.hpp"
 #include "quick_imgui/quick_imgui.hpp"
+#include <filesystem>
 
 // On déclare le pointeur de police en dehors pour y avoir accès dans la boucle
 ImFont* chessFont = nullptr;
 
 int main()
 {
+    std::filesystem::path path1 = std::filesystem::path(PROJECT_FOLDER) 
+                           / "assets/freeserif/FreeSerif.ttf";
+    std::string path2 = std::string(PROJECT_FOLDER) + "/assets/freeserif/FreeSerif.ttf";
     Game      chessGame;
     ChessView view;
 
@@ -32,11 +36,13 @@ int main()
     // 2. Charger la police avec la plage combinée
     // Utilise bien ranges.Data pour passer le tableau de caractères
     chessFont = io.Fonts->AddFontFromFileTTF(
-        "C:/Users/hugo1/.!!HUGO/Font/freeserif/freeserif.ttf", 
+        //path1, // NOT WORKING
+        "../../assets/freeserif/FreeSerif.ttf",
         40.0f, 
         nullptr, 
         ranges.Data
             ); }, .loop = [&]() {
+                ImGui::ShowDemoWindow();
             ImGui::Begin("Chess Board");
 
             // Affichage du tour

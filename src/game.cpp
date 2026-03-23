@@ -15,7 +15,7 @@ void Game::handleSquareClick(Position p)
             {
                 // 1. Vérification victoire (Roi pris)
                 Piece* target = board.getPiece(p);
-                if (target && (target->getIcon() == "\u2654" || target->getIcon() == "\u265A"))
+                if (target && (target->getIcon() == "♔" || target->getIcon() == "♚"))
                 {
                     state = (turn == Color::White) ? GameState::WhiteWins : GameState::BlackWins;
                 }
@@ -25,7 +25,7 @@ void Game::handleSquareClick(Position p)
 
                 // 3. DETECTION PROMOTION
                 Piece* movedPiece = board.getPiece(p);
-                bool   isPawn     = (movedPiece->getIcon() == "\u2659" || movedPiece->getIcon() == "\u265F");
+                bool   isPawn     = (movedPiece->getIcon() == "♙" || movedPiece->getIcon() == "♟");
                 bool   reachedEnd = (movedPiece->getColor() == Color::Black && p.x == 7) || (movedPiece->getColor() == Color::White && p.x == 0);
 
                 if (isPawn && reachedEnd)
