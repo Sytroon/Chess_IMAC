@@ -1,9 +1,10 @@
 #include "game.hpp"
+#include <cmath>
 
 void Game::handleSquareClick(Position p)
 {
-    if (state != GameState::Playing)
-        return; // Bloque le jeu si fini
+    if (state != GameState::Playing || pathAnimating)
+        return; // Bloque le jeu si fini ou si animation en cours
 
     Piece* clickedPiece = board.getPiece(p);
 
@@ -20,28 +21,16 @@ void Game::handleSquareClick(Position p)
                     state = (turn == Color::White) ? GameState::WhiteWins : GameState::BlackWins;
                 }
 
-                // 2. Déplacement de la pièce
-                board.movePiece(selectedPiece->getPos(), p);
+                // 2. Démarrage animation de déplacement (en attendant, on ne bouge pas encore la pièce)
+                pathAnimating = true;
+                pathTime      = 0.0f;
+                pathStart     = selectedPiece->getPos();
+                pathTarget    = p;
+                computePathSquares(pathStart, pathTarget);
 
-                // 3. DETECTION PROMOTION
-                Piece* movedPiece = board.getPiece(p);
-                bool   isPawn     = (movedPiece->getIcon() == "\u2659" || movedPiece->getIcon() == "\u265F");
-                bool   reachedEnd = (movedPiece->getColor() == Color::Black && p.x == 7) || (movedPiece->getColor() == Color::White && p.x == 0);
+                // On garde selectedPiece et validMoves le temps de l'animation
 
-                if (isPawn && reachedEnd)
-                {
-                    state        = GameState::Promotion;
-                    promotionPos = p;
-                    // On ne change pas le tour tout de suite !
-                    // On attend que la promotion soit choisie.
-                }
-                else
-                {
-                    turn = (turn == Color::White) ? Color::Black : Color::White;
-                }
-
-                selectedPiece = nullptr;
-                validMoves.clear();
+                // Trigger effect later dans updatePathAnimation
                 return;
             }
         }
@@ -92,4 +81,99 @@ void Game::promotePawn(std::string choice)
     // On change de tour et on reprend le jeu
     turn  = (turn == Color::White) ? Color::Black : Color::White;
     state = GameState::Playing;
+}
+bool Game::isPathStaircase(Position from, Position to) const
+{
+    if (!selectedPiece)
+        return false;
+
+    int dx = to.x - from.x;
+    int dy = to.y - from.y;
+    int absDx = std::abs(dx);
+    int absDy = std::abs(dy);
+
+    // Cavalier : saut obligatoire, pas d'escalier
+    if (dynamic_cast<const Knight*>(selectedPiece) != nullptr || (absDx == 2 && absDy == 1) || (absDx == 1 && absDy == 2))
+        return false;
+
+    // Si un obstacle se trouve sur le chemin (hors destination), on n'applique pas l'escalier
+    int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
+    int stepY = (dy == 0) ? 0 : (dy > 0 ? 1 : -1);
+    Position current{from.x + stepX, from.y + stepY};
+    while (current.x != to.x || current.y != to.y)
+    {
+        if (board.getPiece(current) != nullptr)
+            return false;
+        current.x += stepX;
+        current.y += stepY;
+    }
+
+    return true;
+}
+
+void Game::computePathSquares(Position from, Position to)
+{
+    pathSquares.clear();
+    if (from.x == to.x && from.y == to.y)
+        return;
+
+    if (!isPathStaircase(from, to))
+    {
+        pathSquares.push_back(to);
+        return;
+    }
+
+    // Mouvement avec escalier
+    int dx = to.x - from.x;
+    int dy = to.y - from.y;
+    int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
+    int stepY = (dy == 0) ? 0 : (dy > 0 ? 1 : -1);
+
+    Position current = from;
+    while (current.x != to.x || current.y != to.y)
+    {
+        current.x += stepX;
+        current.y += stepY;
+        pathSquares.push_back(current);
+    }
+}
+
+void Game::updatePathAnimation(float dt)
+{
+    if (!pathAnimating)
+        return;
+
+    pathTime += dt;
+
+    if (pathTime >= pathDuration)
+    {
+        board.movePiece(pathStart, pathTarget);
+
+        Piece* movedPiece = board.getPiece(pathTarget);
+        bool   isPawn     = movedPiece && (movedPiece->getIcon() == "\u2659" || movedPiece->getIcon() == "\u265F");
+        bool   reachedEnd = movedPiece && ((movedPiece->getColor() == Color::Black && pathTarget.x == 7) || (movedPiece->getColor() == Color::White && pathTarget.x == 0));
+
+        if (isPawn && reachedEnd)
+        {
+            state        = GameState::Promotion;
+            promotionPos = pathTarget;
+        }
+        else
+        {
+            turn = (turn == Color::White) ? Color::Black : Color::White;
+        }
+
+        selectedPiece = nullptr;
+        validMoves.clear();
+        pathSquares.clear();
+        pathAnimating = false;
+        pathTime      = 0.0f;
+    }
+}
+
+void Game::clearPathAnimation()
+{
+    pathAnimating = false;
+    pathTime      = 0.0f;
+    pathSquares.clear();
 }

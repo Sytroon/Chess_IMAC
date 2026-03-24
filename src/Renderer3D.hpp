@@ -6,8 +6,9 @@
 struct Vertex3D {
     glm::vec3 position;
     glm::vec3 normal;
+    glm::vec2 texCoord;
 
-    Vertex3D(glm::vec3 p, glm::vec3 n) : position(p), normal(n) {}
+    Vertex3D(glm::vec3 p, glm::vec3 n, glm::vec2 uv) : position(p), normal(n), texCoord(uv) {}
 };
 
 class Renderer3D {
@@ -17,21 +18,21 @@ private:
     
 public:
     Renderer3D() {
-        // 1. Définition des sommets d'un cube (Position, Normale)
+        // 1. Définition des sommets d'un cube (Position, Normale, UV)
         // On définit 24 sommets (6 faces * 4 sommets) pour avoir des normales propres par face
         std::vector<Vertex3D> vertices = {
             // Face avant (Normal Z+)
-            {{-0.5,-0.5, 0.5}, {0,0,1}}, {{0.5,-0.5, 0.5}, {0,0,1}}, {{0.5, 0.5, 0.5}, {0,0,1}}, {{-0.5, 0.5, 0.5}, {0,0,1}},
+            {{-0.5,-0.5, 0.5}, {0,0,1}, {0,0}}, {{0.5,-0.5, 0.5}, {0,0,1}, {1,0}}, {{0.5, 0.5, 0.5}, {0,0,1}, {1,1}}, {{-0.5, 0.5, 0.5}, {0,0,1}, {0,1}},
             // Face arrière (Normal Z-)
-            {{-0.5,-0.5,-0.5}, {0,0,-1}}, {{0.5,-0.5,-0.5}, {0,0,-1}}, {{0.5, 0.5,-0.5}, {0,0,-1}}, {{-0.5, 0.5,-0.5}, {0,0,-1}},
+            {{-0.5,-0.5,-0.5}, {0,0,-1}, {1,0}}, {{0.5,-0.5,-0.5}, {0,0,-1}, {0,0}}, {{0.5, 0.5,-0.5}, {0,0,-1}, {0,1}}, {{-0.5, 0.5,-0.5}, {0,0,-1}, {1,1}},
             // Face haut (Normal Y+)
-            {{-0.5, 0.5,-0.5}, {0,1,0}}, {{0.5, 0.5,-0.5}, {0,1,0}}, {{0.5, 0.5, 0.5}, {0,1,0}}, {{-0.5, 0.5, 0.5}, {0,1,0}},
+            {{-0.5, 0.5,-0.5}, {0,1,0}, {0,0}}, {{0.5, 0.5,-0.5}, {0,1,0}, {1,0}}, {{0.5, 0.5, 0.5}, {0,1,0}, {1,1}}, {{-0.5, 0.5, 0.5}, {0,1,0}, {0,1}},
             // Face bas (Normal Y-)
-            {{-0.5,-0.5,-0.5}, {0,-1,0}}, {{0.5,-0.5,-0.5}, {0,-1,0}}, {{0.5,-0.5, 0.5}, {0,-1,0}}, {{-0.5,-0.5, 0.5}, {0,-1,0}},
+            {{-0.5,-0.5,-0.5}, {0,-1,0}, {0,0}}, {{0.5,-0.5,-0.5}, {0,-1,0}, {1,0}}, {{0.5,-0.5, 0.5}, {0,-1,0}, {1,1}}, {{-0.5,-0.5, 0.5}, {0,-1,0}, {0,1}},
             // Face droite (Normal X+)
-            {{0.5,-0.5,-0.5}, {1,0,0}}, {{0.5, 0.5,-0.5}, {1,0,0}}, {{0.5, 0.5, 0.5}, {1,0,0}}, {{0.5,-0.5, 0.5}, {1,0,0}},
+            {{0.5,-0.5,-0.5}, {1,0,0}, {0,0}}, {{0.5, 0.5,-0.5}, {1,0,0}, {1,0}}, {{0.5, 0.5, 0.5}, {1,0,0}, {1,1}}, {{0.5,-0.5, 0.5}, {1,0,0}, {0,1}},
             // Face gauche (Normal X-)
-            {{-0.5,-0.5,-0.5}, {-1,0,0}}, {{-0.5, 0.5,-0.5}, {-1,0,0}}, {{-0.5, 0.5, 0.5}, {-1,0,0}}, {{-0.5,-0.5, 0.5}, {-1,0,0}},
+            {{-0.5,-0.5,-0.5}, {-1,0,0}, {0,0}}, {{-0.5, 0.5,-0.5}, {-1,0,0}, {1,0}}, {{-0.5, 0.5, 0.5}, {-1,0,0}, {1,1}}, {{-0.5,-0.5, 0.5}, {-1,0,0}, {0,1}},
         };
 
         uint32_t indices[] = {
@@ -60,9 +61,11 @@ public:
         
         glEnableVertexAttribArray(0); // Position
         glEnableVertexAttribArray(1); // Normale
+        glEnableVertexAttribArray(2); // TexCoord
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (const GLvoid*)0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (const GLvoid*)offsetof(Vertex3D, normal));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (const GLvoid*)offsetof(Vertex3D, texCoord));
         
         glBindVertexArray(0);
     }
