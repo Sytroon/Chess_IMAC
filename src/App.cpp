@@ -66,6 +66,14 @@ void App::handleCameraInput() {
             camera.moveFront(io.MouseWheel * 1.0f);
         }
     }
+    // Touche C pour changer de mode caméra
+    if (ImGui::IsKeyPressed(ImGuiKey_C)) {
+        if (camera.getMode() == TRACKBALL) {
+            camera.setMode(PIECE_VIEW);
+        } else {
+            camera.setMode(TRACKBALL);
+        }
+    }
 }
 
 void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
@@ -145,6 +153,25 @@ void App::render() {
     chessGame.updatePathAnimation(dt);
     handleCameraInput(); // Gestion de la caméra
 
+    // Si en mode pièce et une pièce sélectionnée, positionner la caméra
+    if (camera.getMode() == PIECE_VIEW) {
+        Piece* selected = chessGame.getSelectedPiece();
+        if (selected) {
+            glm::vec3 basePos;
+            if (chessGame.isPathAnimating()) {
+                Position start = chessGame.getPathStart();
+                Position target = chessGame.getPathTarget();
+                float t = chessGame.getPathTime() / chessGame.getPathDuration();
+                basePos = glm::vec3(start.x, 0.0f, start.y) + glm::vec3(target.x - start.x, 0.0f, target.y - start.y) * t;
+            } else {
+                Position pos = selected->getPos();
+                basePos = glm::vec3(pos.x, 0.0f, pos.y);
+            }
+            // Position au centre au-dessus de la pièce (sommet)
+            camera.setPiecePosition(basePos + glm::vec3(0.5f, 0.8f, 0.5f));
+        }
+    }
+
     Color currentTurn = chessGame.getTurn();
     if (currentTurn == Color::White) glClearColor(0.8f, 0.9f, 1.0f, 1.0f);
     else glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
@@ -172,5 +199,13 @@ void App::render() {
     ImGui::Begin("3D View Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Clic gauche + glisser pour tourner");
     ImGui::Text("Molette pour zoomer");
+    if (ImGui::Button("Changer Mode Camera")) {
+        if (camera.getMode() == TRACKBALL) {
+            camera.setMode(PIECE_VIEW);
+        } else {
+            camera.setMode(TRACKBALL);
+        }
+    }
+    ImGui::Text("Mode actuel: %s", camera.getMode() == TRACKBALL ? "Trackball" : "Piece");
     ImGui::End();
 }

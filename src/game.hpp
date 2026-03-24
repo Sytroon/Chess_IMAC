@@ -33,6 +33,8 @@ public:
     const std::vector<Position>& getPathSquares() const { return pathSquares; }
     float                 getPathTime() const { return pathTime; }
     float                 getPathDuration() const { return pathDuration; }
+    Position              getPathStart() const { return pathStart; }
+    Position              getPathTarget() const { return pathTarget; }
     void                  updatePathAnimation(float dt);
     void                  clearPathAnimation();
     void                  computePathSquares(Position from, Position to);
