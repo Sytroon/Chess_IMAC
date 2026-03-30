@@ -3,6 +3,97 @@
 #include <algorithm>
 #include <imgui.h>
 
+namespace {
+Renderer3D::PieceMeshType meshTypeForPiece(const Piece& piece) {
+    if (dynamic_cast<const King*>(&piece) != nullptr) {
+        return Renderer3D::PieceMeshType::King;
+    }
+    if (dynamic_cast<const Queen*>(&piece) != nullptr) {
+        return Renderer3D::PieceMeshType::Queen;
+    }
+    if (dynamic_cast<const Bishop*>(&piece) != nullptr) {
+        return Renderer3D::PieceMeshType::Bishop;
+    }
+    if (dynamic_cast<const Knight*>(&piece) != nullptr) {
+        return Renderer3D::PieceMeshType::Knight;
+    }
+    if (dynamic_cast<const Rook*>(&piece) != nullptr) {
+        return Renderer3D::PieceMeshType::Rook;
+    }
+    return Renderer3D::PieceMeshType::Pawn;
+}
+
+glm::vec3 scaleForPiece(const Piece& piece) {
+    constexpr float globalScale = 2.0f; // scalaire pour taille globale
+
+    if (dynamic_cast<const Pawn*>(&piece) != nullptr) {
+        return glm::vec3(0.6f, 1.2f, 0.6f) * globalScale;
+    }
+    if (dynamic_cast<const Rook*>(&piece) != nullptr) {
+        return glm::vec3(0.72f) * globalScale;
+    }
+    if (dynamic_cast<const Knight*>(&piece) != nullptr) {
+        return glm::vec3(0.78f) * globalScale;
+    }
+    if (dynamic_cast<const Bishop*>(&piece) != nullptr) {
+        return glm::vec3(0.82f) * globalScale;
+    }
+    if (dynamic_cast<const Queen*>(&piece) != nullptr) {
+        return glm::vec3(0.88f) * globalScale;
+    }
+    return glm::vec3(0.96f) * globalScale;
+}
+
+struct PieceOrientation {
+    float pitch = 0.f; // Rotation autour de X : pencher vers l'avant / l'arrière
+    float yaw   = 0.f; // Rotation autour de Y : tourner gauche / droite
+    float roll  = 0.f; // Rotation autour de Z : incliner sur le côté
+};
+
+PieceOrientation orientationForPiece(const Piece& piece) {
+    return {
+        0.f,                                                // pitch : avant / arrière
+        (piece.getColor() == Color::White) ? 90.f : -90.f, // yaw   : direction selon la couleur
+        0.f                                                 // roll  : inclinaison latérale
+    };
+}
+
+glm::mat4 facingRotationForPiece(const Piece& piece) {
+    const PieceOrientation orientation = orientationForPiece(piece);
+
+    glm::mat4 rotation = glm::mat4(1.0f);
+    rotation = glm::rotate(rotation, glm::radians(orientation.pitch), glm::vec3(1.f, 0.f, 0.f));
+    rotation = glm::rotate(rotation, glm::radians(orientation.yaw), glm::vec3(0.f, 1.f, 0.f));
+    rotation = glm::rotate(rotation, glm::radians(orientation.roll), glm::vec3(0.f, 0.f, 1.f));
+    return rotation;
+}
+
+glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
+    return glm::vec3(static_cast<float>(pos.x), height, static_cast<float>(pos.y));
+}
+
+glm::vec3 localOffsetForPiece(const Piece& piece) {
+    // Décalage local du modèle dans sa case.
+    // X = gauche/droite, Y = hauteur, Z = avant/arrière.
+    if (dynamic_cast<const Pawn*>(&piece) != nullptr) {
+        return glm::vec3(0.55f, 0.00f, -0.35f);
+    }
+    if (dynamic_cast<const Knight*>(&piece) != nullptr) {
+        return glm::vec3(0.4f, 0.00f, -0.65f); 
+    }
+    if (dynamic_cast<const Bishop*>(&piece) != nullptr) {
+        return glm::vec3(0.25f, 0.00f, -0.75f);
+    }
+    if (dynamic_cast<const Rook*>(&piece) != nullptr) {
+        return glm::vec3(0.55f, 0.00f, -0.65f);
+    }
+    if (dynamic_cast<const Queen*>(&piece) != nullptr) {
+        return glm::vec3(0.00f, 0.00f, -0.75f);
+    }
+    return glm::vec3(0.00f, 0.00f, -0.75f); // Roi
+}
+} // namespace
+
 App::App() : totalTime(0.0f) {}
 
 void App::checkGLError(const std::string& label) {
@@ -43,7 +134,8 @@ void App::init(const glimac::FilePath& applicationPath) {
         uLightingModeLocation = glGetUniformLocation(program->getGLId(), "uLightingMode");
         uTimeLocation = glGetUniformLocation(program->getGLId(), "uTime");
         
-        renderer = std::make_unique<Renderer3D>();
+        std::string piecesRoot = applicationPath.dirPath() + "../../assets";
+        renderer = std::make_unique<Renderer3D>(piecesRoot);
         lastTime = std::chrono::steady_clock::now();
         
     } catch (const std::exception& e) {
@@ -77,71 +169,96 @@ void App::handleCameraInput() {
 }
 
 void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
-    if (!program || program->getGLId() <= 0) return;
+    if (!program || program->getGLId() <= 0 || !renderer) return;
+
+    constexpr float kSquareHeight = 0.12f;
+    constexpr float kBorderHeight = 0.18f;
 
     program->use();
     checkGLError("program.use()");
 
-    int lightingMode = (chessGame.getTurn() == Color::White) ? 0 : 1;
+    const int lightingMode = (chessGame.getTurn() == Color::White) ? 0 : 1;
     glUniform1i(uLightingModeLocation, lightingMode);
     glUniform1f(uTimeLocation, totalTime);
 
     const Board& board = chessGame.getBoard();
-    const auto& pathSquares = chessGame.getPathSquares();
-    bool pathAnimating = chessGame.isPathAnimating();
-    float pathTime = chessGame.getPathTime();
-    float pathDuration = chessGame.getPathDuration();
+    const auto&  pathSquares = chessGame.getPathSquares();
+    const bool   pathAnimating = chessGame.isPathAnimating();
+    const float  pathTime = chessGame.getPathTime();
+    const float  pathDuration = chessGame.getPathDuration();
 
     for (int x = 0; x < 8; ++x) {
         for (int y = 0; y < 8; ++y) {
-            bool isLightSquare = ((x + y) % 2 == 0);
-            glm::vec4 squareColor = isLightSquare ?
-                glm::vec4(0.98f, 0.76f, 0.45f, 1.0f) :
-                glm::vec4(0.58f, 0.32f, 0.23f, 1.0f);
+            const bool isLightSquare = ((x + y) % 2 == 0);
+            glm::vec4  squareColor = isLightSquare
+                ? glm::vec4(0.98f, 0.76f, 0.45f, 1.0f)
+                : glm::vec4(0.58f, 0.32f, 0.23f, 1.0f);
 
             float elevation = 0.0f;
             if (pathAnimating) {
                 for (size_t i = 0; i < pathSquares.size(); ++i) {
                     if (pathSquares[i].x == x && pathSquares[i].y == y) {
-                        float phase = std::clamp((pathTime / pathDuration) * (static_cast<float>(pathSquares.size()) + 1.0f) - static_cast<float>(i), 0.0f, 1.0f);
+                        const float phase = std::clamp(
+                            (pathTime / pathDuration) * (static_cast<float>(pathSquares.size()) + 1.0f) - static_cast<float>(i),
+                            0.0f,
+                            1.0f
+                        );
                         elevation = std::sin(phase * glm::pi<float>()) * 0.25f;
                         squareColor = glm::mix(squareColor, glm::vec4(0.2f, 0.8f, 1.0f, 1.0f), 0.4f);
+                        break;
                     }
                 }
             }
 
             glUniform4fv(uColorLocation, 1, glm::value_ptr(squareColor));
-            glm::mat4 ModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, 0.01f + elevation, y));
-            
+            glm::mat4 squareModel = glm::translate(glm::mat4(1.0f), glm::vec3(x, elevation + kSquareHeight * 0.5f, y));
+            squareModel = glm::scale(squareModel, glm::vec3(1.0f, kSquareHeight, 1.0f));
+
+            glm::mat4 squareMvp = ProjMatrix * ViewMatrix * squareModel;
+            glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(squareMvp));
+            renderer->drawCube();
+
             Piece* piece = board.getPiece({x, y});
-            if (piece) {
-                glm::vec4 pieceColorVec = (piece->getColor() == Color::White) ?
-                    glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) : glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-                glUniform4fv(uColorLocation, 1, glm::value_ptr(pieceColorVec));
-                ModelMatrix = glm::scale(ModelMatrix, glm::vec3(0.8f, 1.5f, 0.8f));
-            } else {
-                ModelMatrix = glm::scale(ModelMatrix, glm::vec3(1.0f, 0.1f, 1.0f));
+            if (piece == nullptr) {
+                continue;
             }
 
-            glm::mat4 mvp = ProjMatrix * ViewMatrix * ModelMatrix;
-            glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
-            renderer->drawCube();
+            const glm::vec4 pieceColor = (piece->getColor() == Color::White)
+                ? glm::vec4(0.92f, 0.92f, 0.92f, 1.0f)
+                : glm::vec4(0.18f, 0.18f, 0.18f, 1.0f);
+            glUniform4fv(uColorLocation, 1, glm::value_ptr(pieceColor));
+
+            const auto pieceType = meshTypeForPiece(*piece);
+            const auto pieceScale = scaleForPiece(*piece);
+            const float verticalOffset = 0.0f;
+            const Position boardPos{x, y};
+            const glm::vec3 squareCenter = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
+
+            glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenter);
+            pieceModel = pieceModel * facingRotationForPiece(*piece);
+            pieceModel = glm::translate(pieceModel, localOffsetForPiece(*piece));
+            pieceModel = glm::scale(pieceModel, pieceScale);
+
+            glm::mat4 pieceMvp = ProjMatrix * ViewMatrix * pieceModel;
+            glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(pieceMvp));
+            renderer->drawPiece(pieceType);
         }
     }
 
-    // Bordures
     glm::vec4 borderColor = glm::vec4(0.35f, 0.20f, 0.10f, 1.0f);
     glUniform4fv(uColorLocation, 1, glm::value_ptr(borderColor));
-    auto drawBorder = [&](glm::vec3 pos, glm::vec3 scale) {
-        glm::mat4 M = glm::scale(glm::translate(glm::mat4(1.0f), pos), scale);
-        glm::mat4 mvp = ProjMatrix * ViewMatrix * M;
+    auto drawBorder = [&](const glm::vec3& pos, const glm::vec3& scale) {
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+        model = glm::scale(model, scale);
+        const glm::mat4 mvp = ProjMatrix * ViewMatrix * model;
         glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
         renderer->drawCube();
     };
-    drawBorder(glm::vec3(3.5f, 0.05f, -0.5f), glm::vec3(8.5f, 0.12f, 0.5f));
-    drawBorder(glm::vec3(3.5f, 0.05f, 8.5f), glm::vec3(8.5f, 0.12f, 0.5f));
-    drawBorder(glm::vec3(-0.5f, 0.05f, 3.5f), glm::vec3(0.5f, 0.12f, 8.5f));
-    drawBorder(glm::vec3(8.5f, 0.05f, 3.5f), glm::vec3(0.5f, 0.12f, 8.5f));
+
+    drawBorder(glm::vec3(3.5f, kBorderHeight * 0.5f, -0.5f), glm::vec3(8.5f, kBorderHeight, 0.5f));
+    drawBorder(glm::vec3(3.5f, kBorderHeight * 0.5f, 8.5f), glm::vec3(8.5f, kBorderHeight, 0.5f));
+    drawBorder(glm::vec3(-0.5f, kBorderHeight * 0.5f, 3.5f), glm::vec3(0.5f, kBorderHeight, 8.5f));
+    drawBorder(glm::vec3(8.5f, kBorderHeight * 0.5f, 3.5f), glm::vec3(0.5f, kBorderHeight, 8.5f));
 }
 
 void App::render() {
@@ -162,13 +279,13 @@ void App::render() {
                 Position start = chessGame.getPathStart();
                 Position target = chessGame.getPathTarget();
                 float t = chessGame.getPathTime() / chessGame.getPathDuration();
-                basePos = glm::vec3(start.x, 0.0f, start.y) + glm::vec3(target.x - start.x, 0.0f, target.y - start.y) * t;
+                basePos = glm::mix(boardCenterForPosition(start), boardCenterForPosition(target), t);
             } else {
                 Position pos = selected->getPos();
-                basePos = glm::vec3(pos.x, 0.0f, pos.y);
+                basePos = boardCenterForPosition(pos);
             }
-            // Position au centre au-dessus de la pièce (sommet)
-            camera.setPiecePosition(basePos + glm::vec3(0.5f, 0.8f, 0.5f));
+            // Position au centre de la pièce pour le mode de vue rapproché
+            camera.setPiecePosition(basePos + glm::vec3(0.0f, 0.9f, 0.0f));
         }
     }
 
