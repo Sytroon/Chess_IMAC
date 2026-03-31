@@ -8,6 +8,7 @@ enum CameraMode {
 
 class TrackballCamera {
 private:
+    // Convention globale : X = gauche/droite, Y = hauteur, Z = profondeur du plateau.
     float m_fDistance; // Distance par rapport au centre
     float m_fAngleX;   // Angle haut/bas (élévation)
     float m_fAngleY;   // Angle gauche/droite (azimut)

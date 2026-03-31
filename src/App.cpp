@@ -4,6 +4,13 @@
 #include <imgui.h>
 
 namespace {
+constexpr int   kBoardCellCount  = 8;
+constexpr float kSquareSize      = 1.0f;
+constexpr float kBoardMinCoord   = -0.5f * kSquareSize;
+constexpr float kBoardMaxCoord   = (static_cast<float>(kBoardCellCount) - 0.5f) * kSquareSize;
+constexpr float kBoardCenterCoord = (kBoardMinCoord + kBoardMaxCoord) * 0.5f;
+constexpr float kBorderThickness = 0.5f;
+
 Renderer3D::PieceMeshType meshTypeForPiece(const Piece& piece) {
     if (dynamic_cast<const King*>(&piece) != nullptr) {
         return Renderer3D::PieceMeshType::King;
@@ -69,7 +76,9 @@ glm::mat4 facingRotationForPiece(const Piece& piece) {
 }
 
 glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
-    return glm::vec3(static_cast<float>(pos.x), height, static_cast<float>(pos.y));
+    const float worldX = kBoardMinCoord + 0.5f * kSquareSize + static_cast<float>(pos.x) * kSquareSize;
+    const float worldZ = kBoardMinCoord + 0.5f * kSquareSize + static_cast<float>(pos.y) * kSquareSize;
+    return glm::vec3(worldX, height, worldZ);
 }
 
 glm::vec3 localOffsetForPiece(const Piece& piece) {
@@ -187,9 +196,9 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
     const float  pathTime = chessGame.getPathTime();
     const float  pathDuration = chessGame.getPathDuration();
 
-    for (int x = 0; x < 8; ++x) {
-        for (int y = 0; y < 8; ++y) {
-            const bool isLightSquare = ((x + y) % 2 == 0);
+    for (int boardX = 0; boardX < kBoardCellCount; ++boardX) {
+        for (int boardZ = 0; boardZ < kBoardCellCount; ++boardZ) {
+            const bool isLightSquare = ((boardX + boardZ) % 2 == 0);
             glm::vec4  squareColor = isLightSquare
                 ? glm::vec4(0.98f, 0.76f, 0.45f, 1.0f)
                 : glm::vec4(0.58f, 0.32f, 0.23f, 1.0f);
@@ -197,7 +206,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
             float elevation = 0.0f;
             if (pathAnimating) {
                 for (size_t i = 0; i < pathSquares.size(); ++i) {
-                    if (pathSquares[i].x == x && pathSquares[i].y == y) {
+                    if (pathSquares[i].x == boardX && pathSquares[i].y == boardZ) {
                         const float phase = std::clamp(
                             (pathTime / pathDuration) * (static_cast<float>(pathSquares.size()) + 1.0f) - static_cast<float>(i),
                             0.0f,
@@ -211,14 +220,15 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
             }
 
             glUniform4fv(uColorLocation, 1, glm::value_ptr(squareColor));
-            glm::mat4 squareModel = glm::translate(glm::mat4(1.0f), glm::vec3(x, elevation + kSquareHeight * 0.5f, y));
-            squareModel = glm::scale(squareModel, glm::vec3(1.0f, kSquareHeight, 1.0f));
+            const glm::vec3 squareCenter = boardCenterForPosition({boardX, boardZ}, elevation + kSquareHeight * 0.5f);
+            glm::mat4 squareModel = glm::translate(glm::mat4(1.0f), squareCenter);
+            squareModel = glm::scale(squareModel, glm::vec3(kSquareSize, kSquareHeight, kSquareSize));
 
             glm::mat4 squareMvp = ProjMatrix * ViewMatrix * squareModel;
             glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(squareMvp));
             renderer->drawCube();
 
-            Piece* piece = board.getPiece({x, y});
+            Piece* piece = board.getPiece({boardX, boardZ});
             if (piece == nullptr) {
                 continue;
             }
@@ -231,10 +241,10 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
             const auto pieceType = meshTypeForPiece(*piece);
             const auto pieceScale = scaleForPiece(*piece);
             const float verticalOffset = 0.0f;
-            const Position boardPos{x, y};
-            const glm::vec3 squareCenter = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
+            const Position boardPos{boardX, boardZ};
+            const glm::vec3 squareCenterForPiece = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
 
-            glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenter);
+            glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenterForPiece);
             pieceModel = pieceModel * facingRotationForPiece(*piece);
             pieceModel = glm::translate(pieceModel, localOffsetForPiece(*piece));
             pieceModel = glm::scale(pieceModel, pieceScale);
@@ -255,10 +265,15 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
         renderer->drawCube();
     };
 
-    drawBorder(glm::vec3(3.5f, kBorderHeight * 0.5f, -0.5f), glm::vec3(8.5f, kBorderHeight, 0.5f));
-    drawBorder(glm::vec3(3.5f, kBorderHeight * 0.5f, 8.5f), glm::vec3(8.5f, kBorderHeight, 0.5f));
-    drawBorder(glm::vec3(-0.5f, kBorderHeight * 0.5f, 3.5f), glm::vec3(0.5f, kBorderHeight, 8.5f));
-    drawBorder(glm::vec3(8.5f, kBorderHeight * 0.5f, 3.5f), glm::vec3(0.5f, kBorderHeight, 8.5f));
+    const float halfBorderHeight = kBorderHeight * 0.5f;
+    const float outerMin = kBoardMinCoord - kBorderThickness * 0.5f;
+    const float outerMax = kBoardMaxCoord + kBorderThickness * 0.5f;
+    const float frameSpan = (kBoardMaxCoord - kBoardMinCoord) + kBorderThickness;
+
+    drawBorder(glm::vec3(kBoardCenterCoord, halfBorderHeight, outerMin), glm::vec3(frameSpan, kBorderHeight, kBorderThickness));
+    drawBorder(glm::vec3(kBoardCenterCoord, halfBorderHeight, outerMax), glm::vec3(frameSpan, kBorderHeight, kBorderThickness));
+    drawBorder(glm::vec3(outerMin, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, frameSpan));
+    drawBorder(glm::vec3(outerMax, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, frameSpan));
 }
 
 void App::render() {
