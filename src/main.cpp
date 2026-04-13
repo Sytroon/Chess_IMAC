@@ -9,9 +9,8 @@ ImFont* chessFont = nullptr;
 
 int main()
 {
-    std::filesystem::path path1 = std::filesystem::path(PROJECT_FOLDER) 
-                           / "assets/freeserif/FreeSerif.ttf";
-    std::string path2 = std::string(PROJECT_FOLDER) + "/assets/freeserif/FreeSerif.ttf";
+    //std::filesystem::path path1 = std::filesystem::path(PROJECT_FOLDER) / "assets/freeserif/FreeSerif.ttf";
+    //std::string path2 = std::string(PROJECT_FOLDER) + "/assets/freeserif/FreeSerif.ttf";
     Game      chessGame;
     ChessView view;
 
