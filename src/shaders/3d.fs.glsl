@@ -1,48 +1,103 @@
 #version 330
 in vec3 vNormal;
 in vec2 vTexCoord;
-uniform vec4 uColor;
-uniform int uLightingMode; // 0: Blanc (simple), 1: Noir (double lumière)
-uniform float uTime; // Pour lumière mobile
-out vec4 fFragColor;
 
-float rand(float x) {
-    return fract(sin(x * 12.9898) * 43758.5453);
-}
+uniform vec4 uColor;
+uniform int uLightingMode; // 0: Tour des blancs, 1: Tour des noirs
+uniform float uTime;       // Temps pour la lumière mobile
+float lightSpeed = 1.0;
+
+out vec4 fFragColor;
 
 void main() {
     vec3 N = normalize(vNormal);
+    vec3 V = normalize(vec3(0.0, 0.0, 1.0)); // Direction de la caméra
 
-    vec3 finalColor;
+    vec3 finalColor = vec3(0.0);
+    
+    // Définition des directions des deux côtés (à ajuster selon l'orientation de ton échiquier)
+    vec3 L_sideWhite = normalize(vec3(0.0, 0.5, 1.0));  // Vient du côté des blancs
+    vec3 L_sideBlack = normalize(vec3(0.0, 0.5, -1.0)); // Vient du côté des noirs
+
+    // Définition des couleurs
+    vec3 blueColor = vec3(0.3, 0.7, 1.0);
+    vec3 redColor  = vec3(1.0, 0.5, 0.5);
+    vec3 whiteColor = vec3(1.0, 1.0, 1.0);
+
+    float ambientStrength = 0.25;
+
     if (uLightingMode == 0) {
-        // Mode Blanc : éclairage simple
-        vec3 L = normalize(vec3(0.3, 1.0, 0.5));
-        float diff = max(dot(N, L), 0.0);
-        float ambient = 0.4;
-        float specular = pow(max(dot(reflect(-L, N), normalize(vec3(0, 0, 1))), 0.0), 16.0);
+        // ==========================================
+        // TOUR DES BLANCS
+        // Fort côté blanc (Bleu), Faible côté noir (Blanc)
+        // ==========================================
+        
+        // 1. Lumière Forte (Bleue)
+        float diffStrong = max(dot(N, L_sideWhite), 0.0);
+        vec3 R_strong = reflect(-L_sideWhite, N);
+        float specStrong = pow(max(dot(R_strong, V), 0.0), 32.0);
 
-        // Effet bois
-        float grainBase = sin(vTexCoord.x * 40.0 + sin(vTexCoord.y * 80.0) * 3.0);
-        float grain = mix(0.85, 1.15, (grainBase * 0.5 + 0.5));
-        vec3 woodColor = vec3(0.5, 0.3, 0.1) * grain;
-        finalColor = mix(woodColor, uColor.rgb, 0.5);
-        finalColor = finalColor * (ambient + 0.6 * diff) + vec3(0.2) * specular;
+        // 2. Lumière Faible (Blanche)
+        float diffWeak = max(dot(N, L_sideBlack), 0.0);
+        vec3 R_weak = reflect(-L_sideBlack, N);
+        float specWeak = pow(max(dot(R_weak, V), 0.0), 32.0);
+
+        // Assemblage
+        vec3 ambient = uColor.rgb * blueColor * ambientStrength;
+        
+        vec3 diffuse = uColor.rgb * (
+            blueColor * diffStrong * 0.2 +   // 80% d'intensité pour la principale
+            whiteColor * diffWeak * 0.8     // 25% d'intensité pour la secondaire
+        );
+        
+        vec3 specular = 
+            blueColor * specStrong * 0.1 + 
+            whiteColor * specWeak * 0.5;
+
+        finalColor = ambient + diffuse + specular;
+
     } else {
-        // Mode Noir : deux lumières, une mobile
-        vec3 L1 = normalize(vec3(0.3, 1.0, 0.5)); // Lumière fixe
-        vec3 L2 = normalize(vec3(sin(uTime), 0.5, cos(uTime))); // Lumière mobile autour
+        // ==========================================
+        // TOUR DES NOIRS
+        // Fort côté noir (Rouge), Faible côté blanc (Blanc) + Lumière mobile (Rouge)
+        // ==========================================
+        
+        // 1. Lumière Forte (Rouge)
+        float diffStrong = max(dot(N, L_sideBlack), 0.0);
+        vec3 R_strong = reflect(-L_sideBlack, N);
+        float specStrong = pow(max(dot(R_strong, V), 0.0), 32.0);
 
-        float diff1 = max(dot(N, L1), 0.0);
-        float diff2 = max(dot(N, L2), 0.0);
-        float ambient = 0.2;
-        float specular1 = pow(max(dot(reflect(-L1, N), normalize(vec3(0, 0, 1))), 0.0), 16.0);
-        float specular2 = pow(max(dot(reflect(-L2, N), normalize(vec3(0, 0, 1))), 0.0), 16.0);
+        // 2. Lumière Faible (Blanche)
+        float diffWeak = max(dot(N, L_sideWhite), 0.0);
+        vec3 R_weak = reflect(-L_sideWhite, N);
+        float specWeak = pow(max(dot(R_weak, V), 0.0), 32.0);
 
-        // Couleur plus sombre pour mode noir
-        vec3 darkWood = vec3(0.2, 0.1, 0.05);
-        finalColor = mix(darkWood, uColor.rgb * 0.7, 0.3);
-        finalColor = finalColor * (ambient + 0.4 * (diff1 + diff2)) + vec3(0.1) * (specular1 + specular2);
+        // 3. Lumière Mobile (Rouge, pour garder l'ambiance agressive)
+        vec3 L_mobile = normalize(vec3(sin(uTime * lightSpeed), 0.5, cos(uTime * lightSpeed)));
+        float diffMobile = max(dot(N, L_mobile), 0.0);
+        vec3 R_mobile = reflect(-L_mobile, N);
+        float specMobile = pow(max(dot(R_mobile, V), 0.0), 32.0);
+
+        // Assemblage
+        vec3 ambient = uColor.rgb * redColor * ambientStrength;
+        
+        // On combine la lumière rouge fixe, la blanche et la rouge mobile
+        vec3 diffuse = uColor.rgb * (
+            redColor * diffStrong * 0.2 +    // 60% (un peu réduit car il y a la lumière mobile en plus)
+            whiteColor * diffWeak * 0.8 +   // 25%
+            redColor * diffMobile * 0.4      // 40%
+        );
+        
+        vec3 specular = 
+            redColor * specStrong * 0.1 + 
+            whiteColor * specWeak * 0.4 +
+            redColor * specMobile * 0.3;
+
+        finalColor = ambient + diffuse + specular;
     }
+
+    // Sécurité pour éviter de "brûler" l'image (si les valeurs dépassent 1.0, on les bloque à 1.0 max)
+    finalColor = clamp(finalColor, 0.0, 1.0);
 
     fFragColor = vec4(finalColor, uColor.a);
 }

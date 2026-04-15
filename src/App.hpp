@@ -31,7 +31,8 @@ private:
     float totalTime = 0.0f;
 
     void checkGLError(const std::string& label);
-    void drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix);
+    // void drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix);
+    void drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, const Position& hoveredSquare);
     void handleCameraInput(); // Nouvelle méthode pour la souris
 
 public:

@@ -1,23 +1,92 @@
 #include "piece.hpp"
 #include "board.hpp"
 
-Knight::Knight(Color c, Position p)
-    : Piece(c, p, (c == Color::Black ? "\u2658" : "\u265E")) {}
+namespace {
+    /**
+     * @brief Helper function to compute sliding moves for Rooks, Bishops, and Queens.
+     * @param moves The vector to append valid positions to.
+     * @param pos The starting position of the piece.
+     * @param dx The step direction on the X axis.
+     * @param dy The step direction on the Y axis.
+     * @param color The color of the moving piece (to prevent capturing own pieces).
+     * @param board The current chess board.
+     */
+    void addSlidingMoves(std::vector<Position>& moves, Position pos, int dx, int dy, Color color, const Board& board) {
+        Position current = {pos.x + dx, pos.y + dy};
+        
+        while (board.isInside(current)) {
+            Piece* p = board.getPiece(current);
+            if (!p) {
+                // Empty square, valid move
+                moves.push_back(current);
+            } else {
+                // Occupied square, check if it's an opponent's piece
+                if (p->getColor() != color) {
+                    moves.push_back(current); 
+                }
+                break; // Stop sliding if an obstacle is encountered
+            }
+            current.x += dx;
+            current.y += dy;
+        }
+    }
+} // namespace
 
-std::vector<Position> Knight::getPossibleMoves(const Board& board) const
-{
+// Pawn ---------------------------------------------------------------------------------
+
+Pawn::Pawn(Color c, Position p) 
+    : Piece(c, p, "♟") {}
+
+std::vector<Position> Pawn::getPossibleMoves(const Board& board) const {
     std::vector<Position> moves;
-    int                   dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
-    int                   dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
+    
+    // Black moves +1 in X (down the board), White moves -1 in X (up the board)
+    int direction = (color == Color::Black) ? 1 : -1;
 
-    for (int i = 0; i < 8; ++i)
-    {
+    // 1. Move forward one square
+    Position forward{pos.x + direction, pos.y};
+    if (board.isInside(forward) && !board.getPiece(forward)) {
+        moves.push_back(forward);
+        
+        // 2. First move: allow moving two squares forward
+        Position forward2{pos.x + 2 * direction, pos.y};
+        bool isStartPos = (color == Color::Black && pos.x == 1) || (color == Color::White && pos.x == 6);
+        if (isStartPos && !board.getPiece(forward2)) {
+            moves.push_back(forward2);
+        }
+    }
+
+    // 3. Diagonal captures
+    int sideDirs[] = {-1, 1};
+    for (int side : sideDirs) {
+        Position diag{pos.x + direction, pos.y + side};
+        if (board.isInside(diag)) {
+            Piece* target = board.getPiece(diag);
+            if (target && target->getColor() != color) {
+                moves.push_back(diag);
+            }
+        }
+    }
+    return moves;
+}
+
+// Knight ---------------------------------------------------------------------------------
+
+Knight::Knight(Color c, Position p)
+    : Piece(c, p, "♞") {}
+
+std::vector<Position> Knight::getPossibleMoves(const Board& board) const {
+    std::vector<Position> moves;
+    
+    // 8 possible L-shaped moves for a Knight
+    int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
+    int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
+
+    for (int i = 0; i < 8; ++i) {
         Position target{pos.x + dx[i], pos.y + dy[i]};
-        if (board.isInside(target))
-        {
+        if (board.isInside(target)) {
             Piece* p = board.getPiece(target);
-            if (p == nullptr || p->getColor() != color)
-            {
+            if (p == nullptr || p->getColor() != color) {
                 moves.push_back(target);
             }
         }
@@ -25,107 +94,75 @@ std::vector<Position> Knight::getPossibleMoves(const Board& board) const
     return moves;
 }
 
-Pawn::Pawn(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2659" : "\u265F")) {}
-Rook::Rook(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2656" : "\u265C")) {}
-Bishop::Bishop(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2657" : "\u265D")) {}
-Queen::Queen(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2655" : "\u265B")) {}
-King::King(Color c, Position p) : Piece(c, p, (c == Color::Black ? "\u2654" : "\u265A")) {}
+// Bishop ---------------------------------------------------------------------------------
 
-std::vector<Position> Pawn::getPossibleMoves(const Board& board) const
-{
+Bishop::Bishop(Color c, Position p) 
+    : Piece(c, p, "♝") {}
+
+std::vector<Position> Bishop::getPossibleMoves(const Board& board) const {
     std::vector<Position> moves;
-    int                   direction = (color == Color::Black) ? 1 : -1;
-
-    // Avancer d'une case
-    Position forward{pos.x + direction, pos.y};
-    if (board.isInside(forward) && !board.getPiece(forward))
-    {
-        moves.push_back(forward);
-        // Premier mouvement : deux cases
-        Position forward2{pos.x + 2 * direction, pos.y};
-        bool     isStartPos = (color == Color::Black && pos.x == 1) || (color == Color::White && pos.x == 6);
-        if (isStartPos && !board.getPiece(forward2))
-            moves.push_back(forward2);
-    }
-
-    // Captures en diagonale
-    int sideDirs[] = {-1, 1};
-    for (int side : sideDirs)
-    {
-        Position diag{pos.x + direction, pos.y + side};
-        if (board.isInside(diag))
-        {
-            Piece* target = board.getPiece(diag);
-            if (target && target->getColor() != color)
-                moves.push_back(diag);
-        }
-    }
-    return moves;
-}
-
-void addSlidingMoves(std::vector<Position>& moves, Position pos, int dx, int dy, Color color, const Board& board)
-{
-    Position current = {pos.x + dx, pos.y + dy};
-    while (board.isInside(current))
-    {
-        Piece* p = board.getPiece(current);
-        if (!p)
-        {
-            moves.push_back(current);
-        }
-        else
-        {
-            if (p->getColor() != color)
-                moves.push_back(current);
-            break; // Obstacle rencontré
-        }
-        current.x += dx;
-        current.y += dy;
-    }
-}
-
-std::vector<Position> Rook::getPossibleMoves(const Board& board) const
-{
-    std::vector<Position> moves;
-    int                   dx[] = {1, -1, 0, 0}, dy[] = {0, 0, 1, -1};
-    for (int i = 0; i < 4; ++i)
+    
+    // 4 diagonal directions
+    int dx[] = {1, 1, -1, -1};
+    int dy[] = {1, -1, 1, -1};
+    
+    for (int i = 0; i < 4; ++i) {
         addSlidingMoves(moves, pos, dx[i], dy[i], color, board);
+    }
     return moves;
 }
 
-std::vector<Position> Bishop::getPossibleMoves(const Board& board) const
-{
+// Rook ---------------------------------------------------------------------------------
+
+Rook::Rook(Color c, Position p) 
+    : Piece(c, p, "♜") {}
+
+std::vector<Position> Rook::getPossibleMoves(const Board& board) const {
     std::vector<Position> moves;
-    int                   dx[] = {1, 1, -1, -1}, dy[] = {1, -1, 1, -1};
-    for (int i = 0; i < 4; ++i)
+    
+    // 4 straight directions (horizontal and vertical)
+    int dx[] = {1, -1, 0, 0};
+    int dy[] = {0, 0, 1, -1};
+    
+    for (int i = 0; i < 4; ++i) {
         addSlidingMoves(moves, pos, dx[i], dy[i], color, board);
+    }
     return moves;
 }
 
-std::vector<Position> Queen::getPossibleMoves(const Board& board) const
-{
-    // La reine est la combinaison de la Tour et du Fou
+// Queen ---------------------------------------------------------------------------------
+
+Queen::Queen(Color c, Position p) 
+    : Piece(c, p, "♛") {}
+
+std::vector<Position> Queen::getPossibleMoves(const Board& board) const {
+    // A Queen's move set is simply the union of a Rook's and a Bishop's
     auto m1 = Rook(color, pos).getPossibleMoves(board);
     auto m2 = Bishop(color, pos).getPossibleMoves(board);
+    
     m1.insert(m1.end(), m2.begin(), m2.end());
     return m1;
 }
 
-std::vector<Position> King::getPossibleMoves(const Board& board) const
-{
+// King ---------------------------------------------------------------------------------
+
+King::King(Color c, Position p) 
+    : Piece(c, p, "♚") {}
+
+std::vector<Position> King::getPossibleMoves(const Board& board) const {
     std::vector<Position> moves;
-    for (int dx = -1; dx <= 1; ++dx)
-    {
-        for (int dy = -1; dy <= 1; ++dy)
-        {
-            if (dx == 0 && dy == 0)
-                continue;
+    
+    // Immediate 8 neighboring squares
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            if (dx == 0 && dy == 0) continue; // Skip current position
+            
             Position target{pos.x + dx, pos.y + dy};
-            if (board.isInside(target))
-            {
+            if (board.isInside(target)) {
                 Piece* p = board.getPiece(target);
-                if (!p || p->getColor() != color)
+                if (!p || p->getColor() != color) {
                     moves.push_back(target);
+                }
             }
         }
     }

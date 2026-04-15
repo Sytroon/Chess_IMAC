@@ -1,67 +1,85 @@
 #pragma once
+
 #include <string>
 #include <vector>
 
+// Forward declaration to prevent circular dependencies
+class Board;
+
+// 2D coordinate on the chess board
 struct Position {
-    int  x, y;
-    bool operator==(const Position& other) const { return x == other.x && y == other.y; }
+    int x;
+    int y;
+
+    bool operator==(const Position& other) const { 
+        return x == other.x && y == other.y; 
+    }
 };
 
-enum class Color { White,
-                   Black };
+// Color of a piece
+enum class Color { 
+    White, 
+    Black 
+};
 
+// Abstract base class for all chess pieces ----------------------------------------------
 class Piece {
 protected:
-    Color       color;
-    Position    pos;
+    Color color;
+    Position pos;
     std::string icon;
 
 public:
+    // Constructor for generic chess piece
     Piece(Color c, Position p, std::string icon) : color(c), pos(p), icon(icon) {}
+    
+    // Destructor
     virtual ~Piece() = default;
 
-    virtual std::vector<Position> getPossibleMoves(const class Board& board) const = 0;
+    // Return all possible position for a piece
+    virtual std::vector<Position> getPossibleMoves(const Board& board) const = 0;
 
-    Color       getColor() const { return color; }
-    Position    getPos() const { return pos; }
-    void        setPos(Position p) { pos = p; }
+    // Getters and Setters
+    Color getColor() const { return color; }
+    Position getPos() const { return pos; }
+    void setPos(Position p) { pos = p; }
     std::string getIcon() const { return icon; }
 };
 
-// Exemple avec le Cavalier (Knight)
-class Knight : public Piece {
-public:
-    Knight(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
-};
+// Derived Piece Classes -----------------------------------------------------------------
 
 class Pawn : public Piece {
 public:
-    using Piece::Piece; // Constructeur hérité
     Pawn(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
 };
 
-class Rook : public Piece {
+class Knight : public Piece {
 public:
-    Rook(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
+    Knight(Color c, Position p);
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
 };
 
 class Bishop : public Piece {
 public:
     Bishop(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
+};
+
+class Rook : public Piece {
+public:
+    Rook(Color c, Position p);
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
 };
 
 class Queen : public Piece {
 public:
     Queen(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
 };
 
 class King : public Piece {
 public:
     King(Color c, Position p);
-    std::vector<Position> getPossibleMoves(const class Board& board) const override;
+    std::vector<Position> getPossibleMoves(const Board& board) const override;
 };
