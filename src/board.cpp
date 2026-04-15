@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include "piece.hpp"
+#include "gauss.hpp"
 
 Board::Board()
 {
@@ -48,6 +49,7 @@ void Board::movePiece(Position from, Position to)
     {
         grid[to.x][to.y] = std::move(grid[from.x][from.y]);
         grid[to.x][to.y]->setPos(to);
+        grid[to.x][to.y]->setOffset(glm::vec2(Gauss(0.0, 0.1), Gauss(0.0, 0.1)));//Le mieux c'est de prendre une petite valeur (<0.05) mais pour visualiser la loi, on a pris 0.1 
     }
 }
 

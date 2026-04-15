@@ -51,6 +51,7 @@ glm::vec3 scaleForPiece(const Piece& piece) {
     return glm::vec3(0.96f) * globalScale;
 }
 
+//A ameliorer cette partie car redendante et pas super claire
 struct PieceOrientation {
     float pitch = 0.f; // Rotation autour de X : pencher vers l'avant / l'arrière
     float yaw   = 0.f; // Rotation autour de Y : tourner gauche / droite
@@ -81,9 +82,8 @@ glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
     return glm::vec3(worldX, height, worldZ);
 }
 
+//Pour ajuster les positions des pièces
 glm::vec3 localOffsetForPiece(const Piece& piece) {
-    // Décalage local du modèle dans sa case.
-    // X = gauche/droite, Y = hauteur, Z = avant/arrière.
     if (dynamic_cast<const Pawn*>(&piece) != nullptr) {
         return glm::vec3(0.55f, 0.00f, -0.35f);
     }
@@ -245,6 +245,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
             const glm::vec3 squareCenterForPiece = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
 
             glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenterForPiece);
+            pieceModel = glm::translate(pieceModel, glm::vec3(piece->getOffset().x, 0.0f, piece->getOffset().y));
             pieceModel = pieceModel * facingRotationForPiece(*piece);
             pieceModel = glm::translate(pieceModel, localOffsetForPiece(*piece));
             pieceModel = glm::scale(pieceModel, pieceScale);

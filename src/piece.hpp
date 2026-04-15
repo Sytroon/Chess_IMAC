@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 
 struct Position {
     int  x, y;
@@ -15,9 +16,10 @@ protected:
     Color       color;
     Position    pos;
     std::string icon;
+    glm::vec2   offset; // Micro-décalage x,z
 
 public:
-    Piece(Color c, Position p, std::string icon) : color(c), pos(p), icon(icon) {}
+    Piece(Color c, Position p, std::string icon) : color(c), pos(p), icon(icon), offset(0.0f, 0.0f) {}
     virtual ~Piece() = default;
 
     virtual std::vector<Position> getPossibleMoves(const class Board& board) const = 0;
@@ -25,6 +27,8 @@ public:
     Color       getColor() const { return color; }
     Position    getPos() const { return pos; }
     void        setPos(Position p) { pos = p; }
+    glm::vec2   getOffset() const { return offset; }
+    void        setOffset(glm::vec2 o) { offset = o; }
     std::string getIcon() const { return icon; }
 };
 

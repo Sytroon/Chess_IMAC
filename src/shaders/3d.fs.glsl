@@ -34,14 +34,14 @@ void main() {
 
         float diff1 = max(dot(N, L1), 0.0);
         float diff2 = max(dot(N, L2), 0.0);
-        float ambient = 0.2;
+        float ambient = 0.4; // intensité ambiante plus forte pour mode nuit
         float specular1 = pow(max(dot(reflect(-L1, N), normalize(vec3(0, 0, 1))), 0.0), 16.0);
         float specular2 = pow(max(dot(reflect(-L2, N), normalize(vec3(0, 0, 1))), 0.0), 16.0);
 
-        // Couleur plus sombre pour mode noir
-        vec3 darkWood = vec3(0.2, 0.1, 0.05);
-        finalColor = mix(darkWood, uColor.rgb * 0.7, 0.3);
-        finalColor = finalColor * (ambient + 0.4 * (diff1 + diff2)) + vec3(0.1) * (specular1 + specular2);
+        // Couleur plus sombre pour mode noir mais un peu plus visible
+        vec3 darkWood = vec3(0.3, 0.15, 0.08);
+        finalColor = mix(darkWood, uColor.rgb * 0.8, 0.5);
+        finalColor = finalColor * (ambient + 0.7 * (diff1 + diff2)) + vec3(0.2) * (specular1 + specular2);
     }
 
     fFragColor = vec4(finalColor, uColor.a);

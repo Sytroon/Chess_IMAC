@@ -41,6 +41,12 @@ file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS src/*)
 target_sources(${PROJECT_NAME} PRIVATE ${MY_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
+# Add Proba library
+add_library(Proba STATIC Proba/gauss.cpp)
+target_include_directories(Proba PUBLIC Proba)
+target_link_libraries(${PROJECT_NAME} PRIVATE Proba)
+target_include_directories(${PROJECT_NAME} PRIVATE Proba)
+
 # Add quick-imgui library
 add_subdirectory(lib/quick_imgui)
 target_link_libraries(${PROJECT_NAME} PRIVATE quick_imgui::quick_imgui)
