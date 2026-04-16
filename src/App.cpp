@@ -64,8 +64,8 @@ Renderer3D::PieceMeshType meshTypeForPiece(const Piece& piece) {
     return Renderer3D::PieceMeshType::Pawn;
 }
 
-glm::vec3 scaleForPiece(const Piece& piece) {
-    constexpr float globalScale = 2.0f; // scalaire pour taille globale
+glm::vec3 scaleForPiece(const Piece& piece, float randomScaleOffset) {
+    const float globalScale = 2.0f + randomScaleOffset; // scalaire pour taille globale
     if (dynamic_cast<const Pawn*>(&piece) != nullptr) return glm::vec3(0.75f, 0.75f, 0.75f) * globalScale;
     if (dynamic_cast<const Rook*>(&piece) != nullptr) return glm::vec3(0.82f) * globalScale;
     if (dynamic_cast<const Knight*>(&piece) != nullptr) return glm::vec3(0.82f) * globalScale;
@@ -165,15 +165,15 @@ void App::init(const glimac::FilePath& applicationPath) {
     // Calcul de la position aléatoire à côté de l'échiquier
     // On veut X entre -5.0 et -2.0 (à gauche du plateau)
     // On veut Z entre -2.0 et 9.0 (le long du plateau)
-    if (chessGame.isRandomMode()) {
-        float randomX = chessGame.getRandomXDecoration();
-        float randomZ = chessGame.getRandomZDecoration();
+    // if (chessGame.isRandomMode()) {
+    //     float randomX = chessGame.getRandomXDecoration();
+    //     float randomZ = chessGame.getRandomZDecoration();
         
-        m_decorationPos = glm::vec3(randomX, 0.0f, randomZ);
+    //     m_decorationPos = glm::vec3(randomX, 0.0f, randomZ);
         
-        // Bonus : une rotation aléatoire pour que ce soit plus naturel
-        m_decorationRotation = chessGame.getRandomRotationDecoration();
-    }
+    //     // Bonus : une rotation aléatoire pour que ce soit plus naturel
+    //     m_decorationRotation = chessGame.getRandomRotationDecoration();
+    // }
 }
 
 void App::handleCameraInput() {
@@ -308,11 +308,12 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
             glUniform4fv(uColorLocation, 1, glm::value_ptr(pieceColor));
 
             const auto pieceType = meshTypeForPiece(*piece);
-            const auto pieceScale = scaleForPiece(*piece);
+            const auto pieceScale = scaleForPiece(*piece, chessGame.getRandomScale() / 2.0); // Random scale bonus
             const Position boardPos{boardX, boardZ};
             
             glm::vec3 squareCenterForPiece;
             bool isTheAnimatingPiece = false;
+            
             if (pathAnimating) {
                 if (boardX == pathStart.x && boardZ == pathStart.y) {
                     isTheAnimatingPiece = true;
@@ -321,22 +322,32 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
                 }
             }
 
-            
-
             if (isTheAnimatingPiece) {
                 glm::vec3 startPos3D = boardCenterForPosition(pathStart, kSquareHeight);
                 glm::vec3 targetPos3D = boardCenterForPosition(pathTarget, kSquareHeight);
                 squareCenterForPiece = glm::mix(startPos3D, targetPos3D, pieceT);
-                float jumpHeight = chessGame.getJumpHeight();
+                float jumpHeight = chessGame.getJumpHeight() + 1.0f;
                 squareCenterForPiece.y += std::sin(pieceT * glm::pi<float>()) * jumpHeight;
             } else {
                 squareCenterForPiece = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
             }
 
+            // --- DEBUT DES MODIFICATIONS : MATRICE DE TRANSFORMATION ---
             glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenterForPiece);
+
+            // Application du salto (loi géométrique)
+            if (isTheAnimatingPiece) {
+                // IMPORTANT : Assure-toi d'avoir un getter getCurrentSpins() dans game.hpp 
+                // qui renvoie la valeur générée par getGeometrique() lors du clic !
+                int spins = chessGame.getCurrentSpins(); 
+                float rotationAngle = pieceT * spins * 360.0f;
+                pieceModel = glm::rotate(pieceModel, glm::radians(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+
             pieceModel = pieceModel * facingRotationForPiece(*piece);
             pieceModel = glm::translate(pieceModel, localOffsetForPiece(*piece));
             pieceModel = glm::scale(pieceModel, pieceScale);
+            // --- FIN DES MODIFICATIONS ---
 
             glm::mat4 pieceMvp = ProjMatrix * ViewMatrix * pieceModel;
             glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(pieceMvp));
@@ -368,19 +379,19 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
 
     // --- DESSIN DE L'OBJET DÉCORATIF ---
     // On lui donne une couleur spécifique (ex: gris pierre)
-    if (chessGame.isRandomMode()) {
-        glm::vec4 decoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform4fv(uColorLocation, 1, glm::value_ptr(decoColor));
+    // if (chessGame.isRandomMode()) {
+    //     glm::vec4 decoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    //     glUniform4fv(uColorLocation, 1, glm::value_ptr(decoColor));
 
-        glm::mat4 decoModel = glm::translate(glm::mat4(1.0f), m_decorationPos);
-        decoModel = glm::rotate(decoModel, glm::radians(m_decorationRotation), glm::vec3(0, 1, 0));
-        decoModel = glm::scale(decoModel, glm::vec3(5.5f)); // Ajuste la taille selon ton .obj
+    //     glm::mat4 decoModel = glm::translate(glm::mat4(1.0f), m_decorationPos);
+    //     decoModel = glm::rotate(decoModel, glm::radians(m_decorationRotation), glm::vec3(0, 1, 0));
+    //     decoModel = glm::scale(decoModel, glm::vec3(5.5f)); // Ajuste la taille selon ton .obj
 
-        glm::mat4 decoMvp = ProjMatrix * ViewMatrix * decoModel;
-        glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(decoMvp));
+    //     glm::mat4 decoMvp = ProjMatrix * ViewMatrix * decoModel;
+    //     glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(decoMvp));
         
-        renderer->drawPiece(Renderer3D::PieceMeshType::Decoration);
-    }
+    //     renderer->drawPiece(Renderer3D::PieceMeshType::Decoration);
+    // }
 }
 
 void App::render() {
@@ -430,7 +441,12 @@ void App::render() {
     }
 
     Color currentTurn = chessGame.getTurn();
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // if (chessGame.isRandomMode()) {
+    //     glClearColor((float)getUniforme(0.0, 1.0), 0.0f, 0.0f, 1.0f);
+    // } else {
+    //     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // }
+    glClearColor(chessGame.getRBack(), chessGame.getGBack(), chessGame.getBBack(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     GLint viewport[4];

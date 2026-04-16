@@ -29,12 +29,12 @@ void ChessView::drawMainMenu(Game& game) {
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
     
     if (ImGui::Begin("Menu Principal", nullptr, flags)) {
-        ImGui::Text("BIENVENUE AUX ECHECS");
+        ImGui::Text("Les échecs de Ilyass et Hugo");
         ImGui::Separator();
         ImGui::Dummy(ImVec2(0.0f, 10.0f)); // Espacement
 
         // Bouton Mode Normal
-        if (ImGui::Button("Mode Normal", ImVec2(200, 50))) {
+        if (ImGui::Button("Mode Normal", ImVec2(500, 50))) {
             game.startGame(false);
         }
 
@@ -43,7 +43,7 @@ void ChessView::drawMainMenu(Game& game) {
         // Bouton Mode Aléatoire
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.8f, 1.0f)); // Couleur violette pour le fun
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.9f, 1.0f));
-        if (ImGui::Button("Mode Aleatoire", ImVec2(200, 50))) {
+        if (ImGui::Button("Mode Aleatoire", ImVec2(500, 50))) {
             game.startGame(true);
         }
         ImGui::PopStyleColor(2);

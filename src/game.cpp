@@ -10,11 +10,59 @@ void Game::startGame(bool random) {
     state = GameState::Playing; // Lance la partie
 
     if (m_isRandomMode) {
-        randomXDecoration = (float)getUniforme(0.0, 1.0);
-        randomZDecoration = (float)getUniforme(0.0, 1.0);
-        randomRotationDecoration = (float)getUniforme(0.0, 360.0);
+        // randomXDecoration = (float)getUniforme(0.0, 1.0);
+        // randomZDecoration = (float)getUniforme(0.0, 1.0);
+        // randomRotationDecoration = (float)getUniforme(0.0, 360.0);
+
+        // Position of the random piece
+        Position whitePose{getBinomiale(7, 0.5), getBinomiale(7, 0.5)};
+        Position blackPose{getBinomiale(7, 0.5), getBinomiale(7, 0.5)};
+
+        // Type of the random piece
+        int typeIndex = getPoisson(1.2); 
+        if (typeIndex > 4) typeIndex = 4; // Safe
+
+        std::unique_ptr<Piece> whitePiece;
+        std::unique_ptr<Piece> blackPiece;
+
+        switch (typeIndex) {
+            case 0: 
+                whitePiece = std::make_unique<Pawn>(Color::White, whitePose);
+                blackPiece = std::make_unique<Pawn>(Color::Black, blackPose);  
+                break;
+            case 1: 
+                whitePiece = std::make_unique<Knight>(Color::White, whitePose);
+                blackPiece = std::make_unique<Knight>(Color::Black, blackPose); 
+                break;
+            case 2: 
+                whitePiece = std::make_unique<Bishop>(Color::White, whitePose);
+                blackPiece = std::make_unique<Bishop>(Color::Black, blackPose);  
+                break;
+            case 3: 
+                whitePiece = std::make_unique<Rook>(Color::White, whitePose);
+                blackPiece = std::make_unique<Rook>(Color::Black, blackPose); 
+                break;
+            case 4: 
+            default: 
+                whitePiece = std::make_unique<Queen>(Color::White, whitePose);
+                blackPiece = std::make_unique<Queen>(Color::Black, blackPose);  
+                break;
+        }
+        board.setPiece(whitePose, std::move(whitePiece));
+        board.setPiece(blackPose, std::move(blackPiece));
+
+        // Random colored background
+        rBack = (float)getUniforme(0.0, 1.0);
+        gBack = (float)getUniforme(0.0, 1.0);
+        bBack = (float)getUniforme(0.0, 1.0);
+
+        // Random scale bonus for pieces
+        randomScale = getExponentielle(1);
     } else {
-        
+        rBack = 0.0;
+        gBack = 0.0;
+        bBack = 0.0;
+        randomScale = 0.0;
     }
 }
 
@@ -50,12 +98,17 @@ void Game::handleSquareClick(Position p) {
                 }
 
                 // 2. Setup move animation (the actual board update happens when animation ends)
-                // Get animation's jump height basde on gamemode
+                // Get animation's jump height and speed based on gamemode
                 if (isRandomMode()) {
-                   currentJumpHeight = getGauss(1, 2); 
+                    currentJumpHeight = getGauss(1, 2); 
+                    pathDuration = getWeibull(3,2);
+                    currentSpins = getGeometrique(0.4);
                 } else {
                     currentJumpHeight = 1.0f; 
+                    pathDuration = 2.0f;
+                    currentSpins = 0;
                 }
+
                 pathAnimating = true;
                 pathTime = 0.0f;
                 pathStart = selectedPiece->getPos();
