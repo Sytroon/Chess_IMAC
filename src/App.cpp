@@ -11,7 +11,7 @@ constexpr float kBoardMaxCoord   = (static_cast<float>(kBoardCellCount) - 0.5f) 
 constexpr float kBoardCenterCoord = (kBoardMinCoord + kBoardMaxCoord) * 0.5f;
 constexpr float kBorderThickness = 0.5f;
 
-// [NOUVEAU] Fonction de Raycasting pour trouver la case survolée par la souris
+// Fonction de Raycasting pour trouver la case survolée par la souris
 bool getHoveredSquare(
     float mouseX, float mouseY, 
     float screenWidth, float screenHeight, 
@@ -41,9 +41,12 @@ bool getHoveredSquare(
     float t = (boardHeight - cameraPos.y) / ray_wor.y;
     glm::vec3 intersection = cameraPos + ray_wor * t;
     
-    // Conversion en coordonnées de la grille
-    int gridX = static_cast<int>(std::floor((intersection.x - kBoardMinCoord) / kSquareSize));
-    int gridZ = static_cast<int>(std::floor((intersection.z - kBoardMinCoord) / kSquareSize));
+    int rawX = static_cast<int>(std::floor((intersection.x - kBoardMinCoord) / kSquareSize));
+    int rawZ = static_cast<int>(std::floor((intersection.z - kBoardMinCoord) / kSquareSize));
+    
+    // On conserve le X brut, mais on garde l'inversion sur Z
+    int gridX = rawX;
+    int gridZ = (kBoardCellCount - 1) - rawZ;
     
     if (gridX >= 0 && gridX < kBoardCellCount && gridZ >= 0 && gridZ < kBoardCellCount) {
         outHoveredPos = {gridX, gridZ};
@@ -95,8 +98,13 @@ glm::mat4 facingRotationForPiece(const Piece& piece) {
 }
 
 glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
-    const float worldX = kBoardMinCoord + 0.5f * kSquareSize + static_cast<float>(pos.x) * kSquareSize;
-    const float worldZ = kBoardMinCoord + 0.5f * kSquareSize + static_cast<float>(pos.y) * kSquareSize;
+    // On garde l'inversion SEULEMENT sur la profondeur (Z en 3D / Y en 2D)
+    const float mappedX = static_cast<float>(pos.x); 
+    const float mappedZ = static_cast<float>(kBoardCellCount - 1 - pos.y);
+
+    const float worldX = kBoardMinCoord + 0.5f * kSquareSize + mappedX * kSquareSize;
+    const float worldZ = kBoardMinCoord + 0.5f * kSquareSize + mappedZ * kSquareSize;
+    
     return glm::vec3(worldX, height, worldZ);
 }
 
@@ -151,6 +159,21 @@ void App::init(const glimac::FilePath& applicationPath) {
         std::cerr << "[ERROR] Exception lors de l'initialisation: " << e.what() << std::endl;
         throw;
     }
+
+    // ... ton code d'initialisation existant ...
+
+    // Calcul de la position aléatoire à côté de l'échiquier
+    // On veut X entre -5.0 et -2.0 (à gauche du plateau)
+    // On veut Z entre -2.0 et 9.0 (le long du plateau)
+    if (chessGame.isRandomMode()) {
+        float randomX = chessGame.getRandomXDecoration();
+        float randomZ = chessGame.getRandomZDecoration();
+        
+        m_decorationPos = glm::vec3(randomX, 0.0f, randomZ);
+        
+        // Bonus : une rotation aléatoire pour que ce soit plus naturel
+        m_decorationRotation = chessGame.getRandomRotationDecoration();
+    }
 }
 
 void App::handleCameraInput() {
@@ -193,20 +216,13 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
     const float  pathDuration = chessGame.getPathDuration();
     
     // --- GESTION DU TIMING DES DEUX PHASES D'ANIMATION ---
-    // Temps global normalisé entre 0.0 et 1.0
     float globalT = std::clamp(pathTime / pathDuration, 0.0f, 1.0f);
-    
-    // Séparation en deux phases (50% échiquier, 50% pièce)
-    // boardT va de 0.0 à 1.0 pendant la première moitié
     float boardT = std::clamp(globalT / 0.5f, 0.0f, 1.0f);
-    // pieceT va de 0.0 à 1.0 pendant la seconde moitié
     float pieceT = std::clamp((globalT - 0.5f) / 0.5f, 0.0f, 1.0f);
 
-    // Récupération des positions de départ et d'arrivée pour l'animation
     const Position pathStart = chessGame.getPathStart();
     const Position pathTarget = chessGame.getPathTarget();
     
-    // Récupération des infos depuis la classe Game
     Piece* selectedPiece = chessGame.getSelectedPiece();
     const auto& validMoves = chessGame.getHighlights();
 
@@ -218,7 +234,6 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
             bool isHovered = (boardX == hoveredSquare.x && boardZ == hoveredSquare.y);
             bool isSelected = (selectedPiece != nullptr && selectedPiece->getPos().x == boardX && selectedPiece->getPos().y == boardZ);
             
-            // Vérification si la case fait partie des mouvements valides
             bool isPossibleMove = false; 
             for (const auto& pos : validMoves) {
                 if (pos.x == boardX && pos.y == boardZ) {
@@ -236,24 +251,22 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
 
             // --- 3. MODIFICATEURS VISUELS SELON L'ÉTAT ---
             if (isSelected) {
-                squareColor = glm::vec4(1.0f, 0.9f, 0.3f, 1.0f); // Jaune doré
+                squareColor = glm::vec4(1.0f, 0.9f, 0.3f, 1.0f); 
             } else if (isPossibleMove) {
                 Piece* targetPiece = board.getPiece({boardX, boardZ});
                 if (targetPiece != nullptr && targetPiece->getColor() != chessGame.getTurn()) {
-                    squareColor = glm::mix(squareColor, glm::vec4(1.0f, 0.2f, 0.2f, 1.0f), 0.6f); // Halo Rouge (prise)
+                    squareColor = glm::mix(squareColor, glm::vec4(1.0f, 0.2f, 0.2f, 1.0f), 0.6f); 
                 } else {
-                    squareColor = glm::mix(squareColor, glm::vec4(0.2f, 0.8f, 1.0f, 1.0f), 0.5f); // Halo Bleu (déplacement)
+                    squareColor = glm::mix(squareColor, glm::vec4(0.2f, 0.8f, 1.0f, 1.0f), 0.5f); 
                 }
                 elevation += 0.05f; 
             } else if (isHovered) {
                 squareColor = glm::mix(squareColor, glm::vec4(1.0f), 0.3f); 
             }
 
-            // Gestion de l'animation visuelle de la case (vague sur le chemin)
             if (pathAnimating) {
                 for (size_t i = 0; i < pathSquares.size(); ++i) {
                     if (pathSquares[i].x == boardX && pathSquares[i].y == boardZ) {
-                        // On utilise boardT au lieu du temps global
                         const float phase = std::clamp(
                             boardT * (static_cast<float>(pathSquares.size()) + 1.0f) - static_cast<float>(i),
                             0.0f,
@@ -287,7 +300,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
 
             if (isSelected) {
                 pieceColor = glm::mix(pieceColor, glm::vec4(1.0f, 0.9f, 0.3f, 1.0f), 0.4f);
-                verticalOffset = 0.2f; // Lévitation pour la sélection
+                verticalOffset = 0.2f; 
             } else if (isHovered) {
                 pieceColor = glm::mix(pieceColor, glm::vec4(1.0f), 0.2f);
             }
@@ -298,9 +311,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
             const auto pieceScale = scaleForPiece(*piece);
             const Position boardPos{boardX, boardZ};
             
-            // --- CALCUL DE LA POSITION 3D DE LA PIÈCE ---
             glm::vec3 squareCenterForPiece;
-
             bool isTheAnimatingPiece = false;
             if (pathAnimating) {
                 if (boardX == pathStart.x && boardZ == pathStart.y) {
@@ -310,20 +321,15 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
                 }
             }
 
+            
+
             if (isTheAnimatingPiece) {
-                // Coordonnées 3D absolues du départ et de l'arrivée
                 glm::vec3 startPos3D = boardCenterForPosition(pathStart, kSquareHeight);
                 glm::vec3 targetPos3D = boardCenterForPosition(pathTarget, kSquareHeight);
-                
-                // On utilise pieceT au lieu du temps global
-                // La pièce restera immobile au départ tant que pieceT vaut 0.0
                 squareCenterForPiece = glm::mix(startPos3D, targetPos3D, pieceT);
-                
-                // Déplacement vertical : Arc de cercle via un Sinus sur Y
-                float jumpHeight = 1.0f; 
+                float jumpHeight = chessGame.getJumpHeight();
                 squareCenterForPiece.y += std::sin(pieceT * glm::pi<float>()) * jumpHeight;
             } else {
-                // Position normale statique
                 squareCenterForPiece = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
             }
 
@@ -359,6 +365,22 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
     drawBorder(glm::vec3(kBoardCenterCoord, halfBorderHeight, outerMax), glm::vec3(fullSpan, kBorderHeight, kBorderThickness));
     drawBorder(glm::vec3(outerMin, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, innerSpan));
     drawBorder(glm::vec3(outerMax, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, innerSpan));
+
+    // --- DESSIN DE L'OBJET DÉCORATIF ---
+    // On lui donne une couleur spécifique (ex: gris pierre)
+    if (chessGame.isRandomMode()) {
+        glm::vec4 decoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        glUniform4fv(uColorLocation, 1, glm::value_ptr(decoColor));
+
+        glm::mat4 decoModel = glm::translate(glm::mat4(1.0f), m_decorationPos);
+        decoModel = glm::rotate(decoModel, glm::radians(m_decorationRotation), glm::vec3(0, 1, 0));
+        decoModel = glm::scale(decoModel, glm::vec3(5.5f)); // Ajuste la taille selon ton .obj
+
+        glm::mat4 decoMvp = ProjMatrix * ViewMatrix * decoModel;
+        glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(decoMvp));
+        
+        renderer->drawPiece(Renderer3D::PieceMeshType::Decoration);
+    }
 }
 
 void App::render() {
@@ -367,6 +389,26 @@ void App::render() {
     totalTime += dt;
     lastTime = now;
 
+    // =========================================================
+    // 1. GESTION DU MENU PRINCIPAL
+    // =========================================================
+    if (chessGame.getState() == GameState::MainMenu) {
+        // On nettoie l'écran avec une couleur de fond différente pour le menu
+        glClearColor(0.1f, 0.15f, 0.2f, 1.0f); 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // On dessine l'interface du menu (la vue ImGui)
+        if (chessFont) ImGui::PushFont(chessFont);
+        view.draw(chessGame); 
+        if (chessFont) ImGui::PopFont();
+        
+        // IMPORTANT : On s'arrête ici. Pas de plateau 3D ni de fenêtres de jeu !
+        return; 
+    }
+
+    // =========================================================
+    // 2. LOGIQUE EN JEU (Si on n'est pas dans le menu)
+    // =========================================================
     chessGame.updatePathAnimation(dt);
     handleCameraInput(); 
 
@@ -405,37 +447,36 @@ void App::render() {
     Position hoveredSquare = {-1, -1};
     ImGuiIO& io = ImGui::GetIO();
     
-    // Seulement si on est en train de jouer (pas de menu de promotion en cours par exemple)
+    // Seulement si on est en train de jouer
     if (chessGame.getState() == GameState::Playing && !io.WantCaptureMouse) {
         if (getHoveredSquare(io.MousePos.x, io.MousePos.y, screenWidth, screenHeight, ViewMatrix, ProjMatrix, hoveredSquare)) {
-            
-            // Un simple clic gauche délègue l'action à handleSquareClick de ta classe Game !
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 chessGame.handleSquareClick(hoveredSquare);
             }
         }
     }
 
+    // Affichage de la 3D
     drawBoard(ViewMatrix, ProjMatrix, hoveredSquare);
 
-    // --- UI ImGui ---
+    // --- UI ImGui EN JEU ---
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
     ImGui::Begin("Chess Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("Mode : %s", chessGame.isRandomMode() ?  "Chaos" : "Normale");
     ImGui::Text("Tour : %s", currentTurn == Color::White ? "Blancs" : "Noirs");
     
-    // Affichage des états du jeu (Optionnel mais pratique)
-    if (chessGame.getState() == GameState::WhiteWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Blancs Gagnent !");
-    if (chessGame.getState() == GameState::BlackWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Noirs Gagnent !");
+    // if (chessGame.getState() == GameState::WhiteWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Blancs Gagnent !");
+    // if (chessGame.getState() == GameState::BlackWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Noirs Gagnent !");
     if (chessGame.getState() == GameState::Promotion) ImGui::TextColored(ImVec4(1,1,0,1), "Promotion en cours...");
 
     if (chessFont) ImGui::PushFont(chessFont);
-    view.draw(chessGame);
+    view.draw(chessGame); // Affiche la grille 2D et les popups de fin/promotion
     if (chessFont) ImGui::PopFont();
     ImGui::End();
     
     ImGui::SetNextWindowPos(ImVec2(420, 10), ImGuiCond_FirstUseEver);
     ImGui::Begin("3D View Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Clic gauche + glisser pour tourner");
+    ImGui::Text("Clic molette + glisser pour tourner");
     ImGui::Text("Molette pour zoomer");
     if (ImGui::Button("Changer Mode Camera")) {
         if (camera.getMode() == TRACKBALL) camera.setMode(PIECE_VIEW);

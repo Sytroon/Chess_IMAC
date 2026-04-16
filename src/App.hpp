@@ -30,6 +30,10 @@ private:
     std::chrono::steady_clock::time_point lastTime;
     float totalTime = 0.0f;
 
+    // Random related varoables
+    glm::vec3 m_decorationPos;
+    float m_decorationRotation;
+    
     void checkGLError(const std::string& label);
     // void drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix);
     void drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, const Position& hoveredSquare);

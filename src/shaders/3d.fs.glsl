@@ -20,8 +20,8 @@ void main() {
     vec3 L_sideBlack = normalize(vec3(0.0, 0.5, -1.0)); // Vient du côté des noirs
 
     // Définition des couleurs
-    vec3 blueColor = vec3(0.3, 0.7, 1.0);
-    vec3 redColor  = vec3(1.0, 0.5, 0.5);
+    vec3 blueColor = vec3(1.0, 1.0, 1.0);
+    vec3 redColor  = vec3(1.0, 1.0, 1.0);
     vec3 whiteColor = vec3(1.0, 1.0, 1.0);
 
     float ambientStrength = 0.25;
@@ -46,8 +46,8 @@ void main() {
         vec3 ambient = uColor.rgb * blueColor * ambientStrength;
         
         vec3 diffuse = uColor.rgb * (
-            blueColor * diffStrong * 0.2 +   // 80% d'intensité pour la principale
-            whiteColor * diffWeak * 0.8     // 25% d'intensité pour la secondaire
+            blueColor * diffStrong * 0.1 +   // 80% d'intensité pour la principale
+            whiteColor * diffWeak * 0.9     // 25% d'intensité pour la secondaire
         );
         
         vec3 specular = 
@@ -83,8 +83,8 @@ void main() {
         
         // On combine la lumière rouge fixe, la blanche et la rouge mobile
         vec3 diffuse = uColor.rgb * (
-            redColor * diffStrong * 0.2 +    // 60% (un peu réduit car il y a la lumière mobile en plus)
-            whiteColor * diffWeak * 0.8 +   // 25%
+            redColor * diffStrong * 0.1 +    // 60% (un peu réduit car il y a la lumière mobile en plus)
+            whiteColor * diffWeak * 0.9 +   // 25%
             redColor * diffMobile * 0.4      // 40%
         );
         

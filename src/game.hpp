@@ -6,6 +6,7 @@
 
 // State of the game to update view
 enum class GameState { 
+    MainMenu,
     Playing,
     Promotion,
     WhiteWins,
@@ -16,14 +17,21 @@ enum class GameState {
 class Game {
 private:
     // Game state
+    bool m_isRandomMode = false;
     Board board;
     Color turn = Color::White;
-    GameState state = GameState::Playing;
+    GameState state = GameState::MainMenu;
     
     // Selection and movement
     Piece* selectedPiece = nullptr;
     std::vector<Position> validMoves;
     Position promotionPos;
+
+    // Randoms 
+    float currentJumpHeight = 1.0f;
+    float randomXDecoration;
+    float randomZDecoration;
+    float randomRotationDecoration;
 
     // Animation data
     bool pathAnimating = false;
@@ -34,6 +42,14 @@ private:
     std::vector<Position> pathSquares; // Squares traversed during the animation
 
 public:
+    bool isRandomMode() const { return m_isRandomMode; }
+    void startGame(bool random);
+    void returnToMenu();
+    float getJumpHeight() const { return currentJumpHeight; }
+    float getRandomXDecoration() const { return randomXDecoration; }
+    float getRandomZDecoration() const { return randomZDecoration; }
+    float getRandomRotationDecoration() const { return randomRotationDecoration; }
+
     // Resets the game to its initial state.
     void reset();
 

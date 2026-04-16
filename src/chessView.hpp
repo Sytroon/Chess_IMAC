@@ -18,4 +18,6 @@ private:
 
     // Interactive chessboard
     void drawBoardGrid(Game& game);
+
+    void drawMainMenu(Game& game);
 };

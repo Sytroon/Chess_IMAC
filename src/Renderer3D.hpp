@@ -29,7 +29,8 @@ public:
         Knight,
         Bishop,
         Queen,
-        King
+        King,
+        Decoration
     };
 
 private:
@@ -43,7 +44,7 @@ private:
     };
 
     MeshBuffers                       m_cube;
-    std::array<MeshBuffers, 6>        m_pieceMeshes{};
+    std::array<MeshBuffers, 7>        m_pieceMeshes{};
 
     static constexpr float kMinExtent = 0.0001f;
 
@@ -167,6 +168,7 @@ private:
         loadPieceMesh(PieceMeshType::Knight, assetsRoot + "/Chess_Piece/knight.obj");
         loadPieceMesh(PieceMeshType::Queen, assetsRoot + "/Chess_Piece/queen.obj");
         loadPieceMesh(PieceMeshType::Rook, assetsRoot + "/Chess_Piece/rook.obj");
+        loadPieceMesh(PieceMeshType::Decoration, assetsRoot + "/Chess_Piece/decoration.obj");
     }
 
 public:

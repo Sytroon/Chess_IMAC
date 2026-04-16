@@ -1,6 +1,13 @@
 #include "chessView.hpp"
 
 void ChessView::draw(Game& game) {
+    // Si on est dans le menu principal, on affiche QUE le menu
+    if (game.getState() == GameState::MainMenu) {
+        drawMainMenu(game);
+        return; 
+    }
+
+    // --- LOGIQUE EN JEU ---
     // 1. Detect right-click to deselect the current piece
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         game.cancelSelection();
@@ -10,6 +17,39 @@ void ChessView::draw(Game& game) {
     drawGameOverPanel(game);
     drawPromotionPopup(game);
     drawBoardGrid(game);
+}
+
+// Nouvelle fonction pour dessiner le menu
+void ChessView::drawMainMenu(Game& game) {
+    // Centrer la fenêtre ImGui au milieu de l'écran
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    
+    // Fenêtre sans bordures ni redimensionnement
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
+    
+    if (ImGui::Begin("Menu Principal", nullptr, flags)) {
+        ImGui::Text("BIENVENUE AUX ECHECS");
+        ImGui::Separator();
+        ImGui::Dummy(ImVec2(0.0f, 10.0f)); // Espacement
+
+        // Bouton Mode Normal
+        if (ImGui::Button("Mode Normal", ImVec2(200, 50))) {
+            game.startGame(false);
+        }
+
+        ImGui::Dummy(ImVec2(0.0f, 5.0f)); // Espacement
+
+        // Bouton Mode Aléatoire
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.8f, 1.0f)); // Couleur violette pour le fun
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.9f, 1.0f));
+        if (ImGui::Button("Mode Aleatoire", ImVec2(200, 50))) {
+            game.startGame(true);
+        }
+        ImGui::PopStyleColor(2);
+
+        ImGui::End();
+    }
 }
 
 void ChessView::drawGameOverPanel(Game& game) {
@@ -23,11 +63,12 @@ void ChessView::drawGameOverPanel(Game& game) {
         }
         
         ImGui::PopStyleColor();
-        ImGui::SameLine();
         
-        if (ImGui::Button("Recommencer")) {
-            game.reset();
+        // Nouveau bouton pour retourner au menu principal
+        if (ImGui::Button("Menu Principal")) {
+            game.returnToMenu();
         }
+        
         ImGui::Separator();
     }
 }

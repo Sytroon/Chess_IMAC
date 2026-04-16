@@ -1,7 +1,26 @@
 #include "game.hpp"
 #include <cmath>
+#include "randomVar.hpp"
 
 // Game logic -----------------------------------------------------------------------
+
+void Game::startGame(bool random) {
+    m_isRandomMode = random;
+    reset(); // Nettoie le plateau
+    state = GameState::Playing; // Lance la partie
+
+    if (m_isRandomMode) {
+        randomXDecoration = (float)getUniforme(0.0, 1.0);
+        randomZDecoration = (float)getUniforme(0.0, 1.0);
+        randomRotationDecoration = (float)getUniforme(0.0, 360.0);
+    } else {
+        
+    }
+}
+
+void Game::returnToMenu() {
+    state = GameState::MainMenu;
+}
 
 void Game::reset() {
     board.reset();
@@ -31,6 +50,12 @@ void Game::handleSquareClick(Position p) {
                 }
 
                 // 2. Setup move animation (the actual board update happens when animation ends)
+                // Get animation's jump height basde on gamemode
+                if (isRandomMode()) {
+                   currentJumpHeight = getGauss(1, 2); 
+                } else {
+                    currentJumpHeight = 1.0f; 
+                }
                 pathAnimating = true;
                 pathTime = 0.0f;
                 pathStart = selectedPiece->getPos();
