@@ -42,7 +42,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${MY_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 # Add Proba library
-add_library(Proba STATIC Proba/gauss.cpp)
+add_library(Proba STATIC Proba/gauss.cpp Proba/poisson.cpp Proba/exponentielle.cpp Proba/binomiale.cpp)
 target_include_directories(Proba PUBLIC Proba)
 target_link_libraries(${PROJECT_NAME} PRIVATE Proba)
 target_include_directories(${PROJECT_NAME} PRIVATE Proba)

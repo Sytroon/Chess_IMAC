@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <imgui.h>
+#include "randomGenerator.hpp"
 
 namespace {
 constexpr int   kBoardCellCount  = 8;
@@ -316,6 +317,42 @@ void App::render() {
 
     drawBoard(ViewMatrix, ProjMatrix);
 
+    // Gestion des étoiles pendant le tour des noirs with EXAGGERATED VALUES for visibility
+    if (currentTurn == Color::Black) {
+        starTimer += dt;
+        // Generate stars every 5 seconds instead of 60 for testing
+        if (starTimer >= 5.0f) {
+            // Poisson avec lambda=8 (au lieu de 5) = plus d'étoiles
+            int numStars = getPoisson(8.0);
+            for (int i = 0; i < numStars; ++i) {
+                Star s;
+                // Position : autour de l'échiquier à hauteur > 1
+                // EXAGGERATED: positions beaucoup plus proches et visibles
+                // Étendre la zone pour couvrir tout l'espace visible autour de l'échiquier
+                s.position = glm::vec3(
+                    (getRandom() - 0.5f) * 8.0f,  // x entre -4 et 4 (plus large)
+                    3.0f + getExponentielle(0.5) * 2.0f,  // y beaucoup plus haut (tjr on accentue)
+                    (getRandom() - 0.5f) * 8.0f   // z entre -4 et 4 (plus large pour mieux visualiser)
+                );
+                // Taille EXAGGERATED: beaucoup plus gros (de 0.3 à 1.2 au lieu de 0.01 à 0.1)
+                int binomSize = getBinomiale(10, 0.5);
+                s.size = 0.3f + (binomSize / 10.0f) * 0.9f;
+                s.lifetime = 10.0f;  // 10 secondes (au lieu de 8)
+                stars.push_back(s);
+            }
+            starTimer -= 5.0f;
+        }
+    }
+
+    // Mettre à jour les étoiles
+    stars.erase(std::remove_if(stars.begin(), stars.end(), [dt](Star& s) {
+        s.lifetime -= dt;
+        return s.lifetime <= 0.0f;
+    }), stars.end());
+
+    // Dessiner les étoiles
+    drawStars(ViewMatrix, ProjMatrix);
+
     // --- UI ImGui ---
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
     ImGui::Begin("Chess Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -341,4 +378,25 @@ void App::render() {
     }
     ImGui::Text("Mode actuel: %s", camera.getMode() == TRACKBALL ? "Trackball" : "Piece");
     ImGui::End();
+}
+
+void App::drawStars(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
+    for (const auto& star : stars) {
+        drawCube(star.position, star.size, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), ViewMatrix, ProjMatrix);
+    }
+}
+
+void App::drawCube(const glm::vec3& position, float size, const glm::vec4& color, const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix) {
+    if (!program || program->getGLId() <= 0 || !renderer) return;
+
+    program->use();
+    glUniform4fv(uColorLocation, 1, glm::value_ptr(color));
+    glUniform1i(uLightingModeLocation, 0);
+
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+    model = glm::scale(model, glm::vec3(size, size, size));
+
+    glm::mat4 mvp = ProjMatrix * ViewMatrix * model;
+    glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    renderer->drawCube();
 }
