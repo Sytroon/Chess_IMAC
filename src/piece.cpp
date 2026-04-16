@@ -2,15 +2,7 @@
 #include "board.hpp"
 
 namespace {
-    /**
-     * @brief Helper function to compute sliding moves for Rooks, Bishops, and Queens.
-     * @param moves The vector to append valid positions to.
-     * @param pos The starting position of the piece.
-     * @param dx The step direction on the X axis.
-     * @param dy The step direction on the Y axis.
-     * @param color The color of the moving piece (to prevent capturing own pieces).
-     * @param board The current chess board.
-     */
+    // Compute sliding moves for Rooks, Bishops, and Queens
     void addSlidingMoves(std::vector<Position>& moves, Position pos, int dx, int dy, Color color, const Board& board) {
         Position current = {pos.x + dx, pos.y + dy};
         
@@ -30,7 +22,7 @@ namespace {
             current.y += dy;
         }
     }
-} // namespace
+}
 
 // Pawn ---------------------------------------------------------------------------------
 
@@ -136,7 +128,7 @@ Queen::Queen(Color c, Position p)
     : Piece(c, p, "♛") {}
 
 std::vector<Position> Queen::getPossibleMoves(const Board& board) const {
-    // A Queen's move set is simply the union of a Rook's and a Bishop's
+    // Moves = bishop + rook
     auto m1 = Rook(color, pos).getPossibleMoves(board);
     auto m2 = Bishop(color, pos).getPossibleMoves(board);
     

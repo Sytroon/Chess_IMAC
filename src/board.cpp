@@ -41,28 +41,27 @@ void Board::reset() {
 
 Piece* Board::getPiece(Position p) const {
     if (!isInside(p)) {
-        return nullptr; // (To prevent out-of-bounds access)
+        return nullptr; // Prevent out-of-bounds access
     }
     return grid[p.x][p.y].get();
 }
 
 void Board::movePiece(Position from, Position to) {
     if (!isInside(from) || !isInside(to)) {
-        return; // (To prevent out-of-bounds access)
+        return; // Prevent out-of-bounds access
     }
 
     if (grid[from.x][from.y]) {
-        // Move ownership of the pointer to the new cell (automatically deletes any captured piece)
+        // Move ownership of the pointer to the new cell (automatically deletes captured piece)
         grid[to.x][to.y] = std::move(grid[from.x][from.y]);
         
-        // Update the piece's internal position knowledge
+        // Update the piece's internal position
         grid[to.x][to.y]->setPos(to);
     }
 }
 
 void Board::setPiece(Position p, std::unique_ptr<Piece> newPiece) {
     if (isInside(p)) {
-        // Replaces the current piece (if any) with the newly promoted piece
         grid[p.x][p.y] = std::move(newPiece);
     }
 }

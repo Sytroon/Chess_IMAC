@@ -11,40 +11,38 @@ constexpr float kBoardMaxCoord   = (static_cast<float>(kBoardCellCount) - 0.5f) 
 constexpr float kBoardCenterCoord = (kBoardMinCoord + kBoardMaxCoord) * 0.5f;
 constexpr float kBorderThickness = 0.5f;
 
-// Fonction de Raycasting pour trouver la case survolée par la souris
+// Raycast for mouse hovering
 bool getHoveredSquare(
     float mouseX, float mouseY, 
     float screenWidth, float screenHeight, 
     const glm::mat4& viewMatrix, const glm::mat4& projMatrix, 
     Position& outHoveredPos) 
 {
-    // Coordonnées normalisées (-1 à 1)
+    // Normalized coords
     float x = (2.0f * mouseX) / screenWidth - 1.0f;
-    float y = 1.0f - (2.0f * mouseY) / screenHeight; // Y inversé
+    float y = 1.0f - (2.0f * mouseY) / screenHeight;
     
     glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
     glm::vec4 ray_eye = glm::inverse(projMatrix) * ray_clip;
     ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
     
-    // Direction du rayon dans l'espace monde
+    // Ray direction
     glm::vec3 ray_wor = glm::normalize(glm::vec3(glm::inverse(viewMatrix) * ray_eye));
     
-    // Position de la caméra (extraite de la matrice de vue)
+    // Camera position
     glm::vec3 cameraPos = glm::vec3(glm::inverse(viewMatrix)[3]);
     
-    float boardHeight = 0.30f; // kSquareHeight
+    float boardHeight = 0.30f;
     
-    // Si on regarde vers le haut ou parallèle, on ne touche pas le plateau
     if (std::abs(ray_wor.y) < 0.001f || ray_wor.y > 0.0f) return false;
     
-    // Calcul de l'intersection avec le plan du plateau
+    // Compute intersection
     float t = (boardHeight - cameraPos.y) / ray_wor.y;
     glm::vec3 intersection = cameraPos + ray_wor * t;
     
     int rawX = static_cast<int>(std::floor((intersection.x - kBoardMinCoord) / kSquareSize));
     int rawZ = static_cast<int>(std::floor((intersection.z - kBoardMinCoord) / kSquareSize));
     
-    // On conserve le X brut, mais on garde l'inversion sur Z
     int gridX = rawX;
     int gridZ = (kBoardCellCount - 1) - rawZ;
     
@@ -64,6 +62,7 @@ Renderer3D::PieceMeshType meshTypeForPiece(const Piece& piece) {
     return Renderer3D::PieceMeshType::Pawn;
 }
 
+// Precise scale for each piece
 glm::vec3 scaleForPiece(const Piece& piece, float randomScaleOffset) {
     const float globalScale = 2.0f + randomScaleOffset; // scalaire pour taille globale
     if (dynamic_cast<const Pawn*>(&piece) != nullptr) return glm::vec3(0.75f, 0.75f, 0.75f) * globalScale;
@@ -83,7 +82,7 @@ struct PieceOrientation {
 PieceOrientation orientationForPiece(const Piece& piece) {
     return {
         0.f,                                                
-        (piece.getColor() == Color::White) ? 90.f : -90.f, 
+        (piece.getColor() == Color::White) ? 90.f : -90.f, // Wrong rotation
         0.f                                                 
     };
 }
@@ -98,7 +97,6 @@ glm::mat4 facingRotationForPiece(const Piece& piece) {
 }
 
 glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
-    // On garde l'inversion SEULEMENT sur la profondeur (Z en 3D / Y en 2D)
     const float mappedX = static_cast<float>(pos.x); 
     const float mappedZ = static_cast<float>(kBoardCellCount - 1 - pos.y);
 
@@ -111,7 +109,7 @@ glm::vec3 boardCenterForPosition(const Position& pos, float height = 0.0f) {
 glm::vec3 localOffsetForPiece(const Piece& piece) {
     return glm::vec3(0.0f, 0.0f, 0.0f);
 }
-} // namespace
+}
 
 App::App() : totalTime(0.0f) {}
 
@@ -159,21 +157,6 @@ void App::init(const glimac::FilePath& applicationPath) {
         std::cerr << "[ERROR] Exception lors de l'initialisation: " << e.what() << std::endl;
         throw;
     }
-
-    // ... ton code d'initialisation existant ...
-
-    // Calcul de la position aléatoire à côté de l'échiquier
-    // On veut X entre -5.0 et -2.0 (à gauche du plateau)
-    // On veut Z entre -2.0 et 9.0 (le long du plateau)
-    // if (chessGame.isRandomMode()) {
-    //     float randomX = chessGame.getRandomXDecoration();
-    //     float randomZ = chessGame.getRandomZDecoration();
-        
-    //     m_decorationPos = glm::vec3(randomX, 0.0f, randomZ);
-        
-    //     // Bonus : une rotation aléatoire pour que ce soit plus naturel
-    //     m_decorationRotation = chessGame.getRandomRotationDecoration();
-    // }
 }
 
 void App::handleCameraInput() {
@@ -215,7 +198,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
     const float  pathTime = chessGame.getPathTime();
     const float  pathDuration = chessGame.getPathDuration();
     
-    // --- GESTION DU TIMING DES DEUX PHASES D'ANIMATION ---
+    // Animation timing in 2 phases
     float globalT = std::clamp(pathTime / pathDuration, 0.0f, 1.0f);
     float boardT = std::clamp(globalT / 0.5f, 0.0f, 1.0f);
     float pieceT = std::clamp((globalT - 0.5f) / 0.5f, 0.0f, 1.0f);
@@ -229,7 +212,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
     for (int boardX = 0; boardX < kBoardCellCount; ++boardX) {
         for (int boardZ = 0; boardZ < kBoardCellCount; ++boardZ) {
             
-            // --- 1. ETATS DE LA CASE ---
+            // Square state
             const bool isLightSquare = ((boardX + boardZ) % 2 == 0);
             bool isHovered = (boardX == hoveredSquare.x && boardZ == hoveredSquare.y);
             bool isSelected = (selectedPiece != nullptr && selectedPiece->getPos().x == boardX && selectedPiece->getPos().y == boardZ);
@@ -242,14 +225,14 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
                 }
             }
 
-            // --- 2. COULEUR DE BASE ---
+            // Square color
             glm::vec4 squareColor = isLightSquare
                 ? glm::vec4(238.0f / 255.0f, 238.0f / 255.0f, 210.0f / 255.0f, 1.0f)
                 : glm::vec4(118.0f / 255.0f, 150.0f / 255.0f, 86.0f / 255.0f, 1.0f);
 
             float elevation = 0.0f;
 
-            // --- 3. MODIFICATEURS VISUELS SELON L'ÉTAT ---
+            // Update colors
             if (isSelected) {
                 squareColor = glm::vec4(1.0f, 0.9f, 0.3f, 1.0f); 
             } else if (isPossibleMove) {
@@ -279,7 +262,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
                 }
             }
 
-            // --- 4. DESSIN DE LA CASE ---
+            // Draw square
             glUniform4fv(uColorLocation, 1, glm::value_ptr(squareColor));
             const glm::vec3 squareCenter = boardCenterForPosition({boardX, boardZ}, elevation + kSquareHeight * 0.5f);
             glm::mat4 squareModel = glm::translate(glm::mat4(1.0f), squareCenter);
@@ -288,7 +271,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
             glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(squareMvp));
             renderer->drawCube();
 
-            // --- 5. GESTION ET DESSIN DE LA PIÈCE ---
+            // Compute and draw piece
             Piece* piece = board.getPiece({boardX, boardZ});
             if (piece == nullptr) continue;
 
@@ -332,13 +315,10 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
                 squareCenterForPiece = boardCenterForPosition(boardPos, elevation + kSquareHeight + verticalOffset);
             }
 
-            // --- DEBUT DES MODIFICATIONS : MATRICE DE TRANSFORMATION ---
             glm::mat4 pieceModel = glm::translate(glm::mat4(1.0f), squareCenterForPiece);
 
-            // Application du salto (loi géométrique)
+            // Random looping
             if (isTheAnimatingPiece) {
-                // IMPORTANT : Assure-toi d'avoir un getter getCurrentSpins() dans game.hpp 
-                // qui renvoie la valeur générée par getGeometrique() lors du clic !
                 int spins = chessGame.getCurrentSpins(); 
                 float rotationAngle = pieceT * spins * 360.0f;
                 pieceModel = glm::rotate(pieceModel, glm::radians(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -347,7 +327,6 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
             pieceModel = pieceModel * facingRotationForPiece(*piece);
             pieceModel = glm::translate(pieceModel, localOffsetForPiece(*piece));
             pieceModel = glm::scale(pieceModel, pieceScale);
-            // --- FIN DES MODIFICATIONS ---
 
             glm::mat4 pieceMvp = ProjMatrix * ViewMatrix * pieceModel;
             glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(pieceMvp));
@@ -355,7 +334,7 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
         }
     }
 
-    // --- 6. DESSIN DES BORDURES DU PLATEAU ---
+    // Edges of chessboard
     glm::vec4 borderColor = glm::vec4(0.35f, 0.20f, 0.10f, 1.0f);
     glUniform4fv(uColorLocation, 1, glm::value_ptr(borderColor));
     auto drawBorder = [&](const glm::vec3& pos, const glm::vec3& scale) {
@@ -376,22 +355,6 @@ void App::drawBoard(const glm::mat4& ViewMatrix, const glm::mat4& ProjMatrix, co
     drawBorder(glm::vec3(kBoardCenterCoord, halfBorderHeight, outerMax), glm::vec3(fullSpan, kBorderHeight, kBorderThickness));
     drawBorder(glm::vec3(outerMin, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, innerSpan));
     drawBorder(glm::vec3(outerMax, halfBorderHeight, kBoardCenterCoord), glm::vec3(kBorderThickness, kBorderHeight, innerSpan));
-
-    // --- DESSIN DE L'OBJET DÉCORATIF ---
-    // On lui donne une couleur spécifique (ex: gris pierre)
-    // if (chessGame.isRandomMode()) {
-    //     glm::vec4 decoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    //     glUniform4fv(uColorLocation, 1, glm::value_ptr(decoColor));
-
-    //     glm::mat4 decoModel = glm::translate(glm::mat4(1.0f), m_decorationPos);
-    //     decoModel = glm::rotate(decoModel, glm::radians(m_decorationRotation), glm::vec3(0, 1, 0));
-    //     decoModel = glm::scale(decoModel, glm::vec3(5.5f)); // Ajuste la taille selon ton .obj
-
-    //     glm::mat4 decoMvp = ProjMatrix * ViewMatrix * decoModel;
-    //     glUniformMatrix4fv(uMVPLocation, 1, GL_FALSE, glm::value_ptr(decoMvp));
-        
-    //     renderer->drawPiece(Renderer3D::PieceMeshType::Decoration);
-    // }
 }
 
 void App::render() {
@@ -400,11 +363,9 @@ void App::render() {
     totalTime += dt;
     lastTime = now;
 
-    // =========================================================
-    // 1. GESTION DU MENU PRINCIPAL
-    // =========================================================
+    // 1. Main menu ---------------------------------------------------
     if (chessGame.getState() == GameState::MainMenu) {
-        // On nettoie l'écran avec une couleur de fond différente pour le menu
+        // Background color for main
         glClearColor(0.1f, 0.15f, 0.2f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -412,14 +373,11 @@ void App::render() {
         if (chessFont) ImGui::PushFont(chessFont);
         view.draw(chessGame); 
         if (chessFont) ImGui::PopFont();
-        
-        // IMPORTANT : On s'arrête ici. Pas de plateau 3D ni de fenêtres de jeu !
+
         return; 
     }
 
-    // =========================================================
-    // 2. LOGIQUE EN JEU (Si on n'est pas dans le menu)
-    // =========================================================
+    // 2. Game logic ---------------------------------------------------
     chessGame.updatePathAnimation(dt);
     handleCameraInput(); 
 
@@ -441,11 +399,7 @@ void App::render() {
     }
 
     Color currentTurn = chessGame.getTurn();
-    // if (chessGame.isRandomMode()) {
-    //     glClearColor((float)getUniforme(0.0, 1.0), 0.0f, 0.0f, 1.0f);
-    // } else {
-    //     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    // }
+    // Random background color for random gamemode
     glClearColor(chessGame.getRBack(), chessGame.getGBack(), chessGame.getBBack(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -459,11 +413,10 @@ void App::render() {
     glm::mat4 ProjMatrix = glm::perspective(glm::radians(45.f), aspectRatio, 0.1f, 100.f);
     glm::mat4 ViewMatrix = camera.getViewMatrix(); 
 
-    // --- RAYCASTING ET GESTION DES CLICS ---
+    // Raycasting adn clicks
     Position hoveredSquare = {-1, -1};
     ImGuiIO& io = ImGui::GetIO();
     
-    // Seulement si on est en train de jouer
     if (chessGame.getState() == GameState::Playing && !io.WantCaptureMouse) {
         if (getHoveredSquare(io.MousePos.x, io.MousePos.y, screenWidth, screenHeight, ViewMatrix, ProjMatrix, hoveredSquare)) {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
@@ -472,21 +425,12 @@ void App::render() {
         }
     }
 
-    // Affichage de la 3D
+    // 3D view
     drawBoard(ViewMatrix, ProjMatrix, hoveredSquare);
 
-    // --- UI ImGui EN JEU ---
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Chess Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Mode : %s", chessGame.isRandomMode() ?  "Chaos" : "Normale");
-    ImGui::Text("Tour : %s", currentTurn == Color::White ? "Blancs" : "Noirs");
-    
-    // if (chessGame.getState() == GameState::WhiteWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Blancs Gagnent !");
-    // if (chessGame.getState() == GameState::BlackWins) ImGui::TextColored(ImVec4(0,1,0,1), "Les Noirs Gagnent !");
-    if (chessGame.getState() == GameState::Promotion) ImGui::TextColored(ImVec4(1,1,0,1), "Promotion en cours...");
-
+    // 3D related ingame UI
     if (chessFont) ImGui::PushFont(chessFont);
-    view.draw(chessGame); // Affiche la grille 2D et les popups de fin/promotion
+    view.draw(chessGame);
     if (chessFont) ImGui::PopFont();
     ImGui::End();
     

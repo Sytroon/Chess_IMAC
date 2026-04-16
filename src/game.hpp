@@ -27,24 +27,21 @@ private:
     std::vector<Position> validMoves;
     Position promotionPos;
 
-    // Randoms 
+    // Variables controlled by math project
     float currentJumpHeight = 1.0f;
-    float pathDuration = 2.0f; 
+    float pathDuration = 2.0f; // Animation duration
     float rBack;
     float gBack;
     float bBack;
     int currentSpins = 0;
     float randomScale;
-    // float randomXDecoration;
-    // float randomZDecoration;
-    // float randomRotationDecoration;
 
     // Animation data
     bool pathAnimating = false;
-    float pathTime = 0.0f;            // Current animation progress (in seconds)
+    float pathTime = 0.0f; // Current animation progress (in seconds)
     Position pathStart;
     Position pathTarget;
-    std::vector<Position> pathSquares; // Squares traversed during the animation
+    std::vector<Position> pathSquares; // Square path for animation
 
 public:
     bool isRandomMode() const { return m_isRandomMode; }
@@ -56,9 +53,6 @@ public:
     float getGBack() const { return gBack; }
     float getBBack() const { return bBack; }
     float getRandomScale() const { return randomScale; }
-    // float getRandomXDecoration() const { return randomXDecoration; }
-    // float getRandomZDecoration() const { return randomZDecoration; }
-    // float getRandomRotationDecoration() const { return randomRotationDecoration; }
 
     // Resets the game to its initial state.
     void reset();
@@ -81,7 +75,7 @@ public:
     void computePathSquares(Position from, Position to);
     bool isPathStaircase(Position from, Position to) const;
 
-    // Getters -----------------------------------------------------------------------
+    // Additional getters -----------------------------------------------------------------------
 
     const Board& getBoard() const { return board; }
     const std::vector<Position>& getHighlights() const { return validMoves; }

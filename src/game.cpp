@@ -10,17 +10,13 @@ void Game::startGame(bool random) {
     state = GameState::Playing; // Lance la partie
 
     if (m_isRandomMode) {
-        // randomXDecoration = (float)getUniforme(0.0, 1.0);
-        // randomZDecoration = (float)getUniforme(0.0, 1.0);
-        // randomRotationDecoration = (float)getUniforme(0.0, 360.0);
-
-        // Position of the random piece
+        // Position of the random additional piece
         Position whitePose{getBinomiale(7, 0.5), getBinomiale(7, 0.5)};
         Position blackPose{getBinomiale(7, 0.5), getBinomiale(7, 0.5)};
 
-        // Type of the random piece
+        // Type of the random additional piece
         int typeIndex = getPoisson(1.2); 
-        if (typeIndex > 4) typeIndex = 4; // Safe
+        if (typeIndex > 4) typeIndex = 4; // Safety
 
         std::unique_ptr<Piece> whitePiece;
         std::unique_ptr<Piece> blackPiece;
@@ -51,7 +47,7 @@ void Game::startGame(bool random) {
         board.setPiece(whitePose, std::move(whitePiece));
         board.setPiece(blackPose, std::move(blackPiece));
 
-        // Random colored background
+        // Randomly colored background
         rBack = (float)getUniforme(0.0, 1.0);
         gBack = (float)getUniforme(0.0, 1.0);
         bBack = (float)getUniforme(0.0, 1.0);
@@ -59,6 +55,7 @@ void Game::startGame(bool random) {
         // Random scale bonus for pieces
         randomScale = getExponentielle(1);
     } else {
+        // Default values
         rBack = 0.0;
         gBack = 0.0;
         bBack = 0.0;
@@ -91,14 +88,14 @@ void Game::handleSquareClick(Position p) {
     if (selectedPiece) {
         for (const auto& move : validMoves) {
             if (move == p) {
-                // 1. Check for win condition (King capture)
+                // 1. Check for win condition
                 Piece* target = board.getPiece(p);
                 if (dynamic_cast<King*>(target) != nullptr) {
                     state = (turn == Color::White) ? GameState::WhiteWins : GameState::BlackWins;
                 }
 
-                // 2. Setup move animation (the actual board update happens when animation ends)
-                // Get animation's jump height and speed based on gamemode
+                // 2. Setup move animation
+                // (Get animation's jump height and speed based on gamemode)
                 if (isRandomMode()) {
                     currentJumpHeight = getGauss(1, 2); 
                     pathDuration = getWeibull(3,2);
@@ -135,7 +132,6 @@ void Game::cancelSelection() {
 }
 
 void Game::promotePawn(const std::string& choice) {
-    // The promoted piece belongs to the player who just played
     Color c = (turn == Color::White) ? Color::White : Color::Black;
 
     if (choice == "Dame") {
@@ -163,14 +159,12 @@ bool Game::isPathStaircase(Position from, Position to) const {
     int absDx = std::abs(dx);
     int absDy = std::abs(dy);
 
-    // Knights jump directly, no staircase logic
+    // Knights jump directly, no staircase logic for animation
     if (dynamic_cast<const Knight*>(selectedPiece) != nullptr || 
        (absDx == 2 && absDy == 1) || (absDx == 1 && absDy == 2)) {
         return false;
     }
 
-    // Check for obstacles along the path. If an obstacle exists (excluding destination), 
-    // disable staircase effect to avoid phasing through pieces
     int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
     int stepY = (dy == 0) ? 0 : (dy > 0 ? 1 : -1);
     Position current{from.x + stepX, from.y + stepY};
@@ -196,7 +190,7 @@ void Game::computePathSquares(Position from, Position to) {
         return;
     }
 
-    // Calculate staircase path squares
+    // Calculate staircase path squares for animation
     int dx = to.x - from.x;
     int dy = to.y - from.y;
     int stepX = (dx == 0) ? 0 : (dx > 0 ? 1 : -1);
@@ -224,12 +218,12 @@ void Game::updatePathAnimation(float dt) {
         bool reachedEnd = movedPiece && ((movedPiece->getColor() == Color::Black && pathTarget.x == 7) || 
                                          (movedPiece->getColor() == Color::White && pathTarget.x == 0));
 
-        // Trigger pawn promotion if applicable
+        // Trigger pawn promotion
         if (isPawn && reachedEnd) {
             state = GameState::Promotion;
             promotionPos = pathTarget;
         } else {
-            // Otherwise, switch turns normally
+            // Or pass turn normally
             turn = (turn == Color::White) ? Color::Black : Color::White;
         }
 

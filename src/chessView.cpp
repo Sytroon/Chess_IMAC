@@ -1,47 +1,57 @@
 #include "chessView.hpp"
 
 void ChessView::draw(Game& game) {
-    // Si on est dans le menu principal, on affiche QUE le menu
+    // Only display menu if in menu
     if (game.getState() == GameState::MainMenu) {
         drawMainMenu(game);
         return; 
     }
 
-    // --- LOGIQUE EN JEU ---
-    // 1. Detect right-click to deselect the current piece
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Chess Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("Mode : %s", game.isRandomMode() ?  "Chaos" : "Normale");
+    ImGui::Text("Tour : %s", game.getTurn() == Color::White ? "Blancs" : "Noirs");
+    
+    if (game.getState() == GameState::Promotion) ImGui::TextColored(ImVec4(1,1,0,1), "Promotion en cours...");
+
+    ImGui::Spacing();
+    if (ImGui::Button("Retour au menu")) {
+        game.returnToMenu(); 
+    }
+    ImGui::Spacing();
+    
+    // Detect right-click to deselect the current piece
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         game.cancelSelection();
     }
 
-    // 2. Draw UI components
+    // Draw UI components
     drawGameOverPanel(game);
     drawPromotionPopup(game);
     drawBoardGrid(game);
 }
 
-// Nouvelle fonction pour dessiner le menu
 void ChessView::drawMainMenu(Game& game) {
-    // Centrer la fenêtre ImGui au milieu de l'écran
+    // Centered
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     
-    // Fenêtre sans bordures ni redimensionnement
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
     
     if (ImGui::Begin("Menu Principal", nullptr, flags)) {
         ImGui::Text("Les échecs de Ilyass et Hugo");
         ImGui::Separator();
-        ImGui::Dummy(ImVec2(0.0f, 10.0f)); // Espacement
+        ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
-        // Bouton Mode Normal
+        // Normal mode
         if (ImGui::Button("Mode Normal", ImVec2(500, 50))) {
             game.startGame(false);
         }
 
-        ImGui::Dummy(ImVec2(0.0f, 5.0f)); // Espacement
+        ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
-        // Bouton Mode Aléatoire
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.8f, 1.0f)); // Couleur violette pour le fun
+        // Random mode
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.8f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.9f, 1.0f));
         if (ImGui::Button("Mode Aleatoire", ImVec2(500, 50))) {
             game.startGame(true);
@@ -54,7 +64,7 @@ void ChessView::drawMainMenu(Game& game) {
 
 void ChessView::drawGameOverPanel(Game& game) {
     if (game.getState() == GameState::BlackWins || game.getState() == GameState::WhiteWins) {
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f)); // Yellow
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.04, 0.6f, 1.0f, 1.0f));
         
         if (game.getState() == GameState::WhiteWins) {
             ImGui::Text("VICTOIRE DES BLANCS !");
@@ -64,7 +74,7 @@ void ChessView::drawGameOverPanel(Game& game) {
         
         ImGui::PopStyleColor();
         
-        // Nouveau bouton pour retourner au menu principal
+        // Back to main menu
         if (ImGui::Button("Menu Principal")) {
             game.returnToMenu();
         }

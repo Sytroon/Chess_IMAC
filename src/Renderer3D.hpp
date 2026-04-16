@@ -133,8 +133,6 @@ private:
 
         const auto* sourceVertices = geometry.getVertexBuffer();
 
-        // Plus aucune rotation forcée ou de re-centrage arbitraire.
-        // On fait confiance à l'export propre de Blender.
         std::vector<Vertex3D> vertices;
         vertices.reserve(geometry.getVertexCount());
         for (size_t i = 0; i < geometry.getVertexCount(); ++i) {
@@ -156,12 +154,6 @@ private:
     }
 
     void loadPieceMeshes(const std::string& assetsRoot) {
-        // loadPieceMesh(PieceMeshType::Pawn, assetsRoot + "/Stone_Chess_Pawn_Side_A_v2_L3.123c0f81bc65-2846-45af-9512-6e41230dea09/12944_Stone_Chess_Pawn_Side_A_V2_L3.obj");
-        // loadPieceMesh(PieceMeshType::Bishop, assetsRoot + "/Stones_Chess/Stone_Chess_Bishop_Side_A_v2_L1.123c77d85640-dad3-4575-8a61-cf755d403e56/12942_Stone_Chess_Bishop_V2_l1.obj");
-        // loadPieceMesh(PieceMeshType::King, assetsRoot + "/Stones_Chess/Stone_Chess_King_Side_A_v2_L1.123cb493df42-46f1-49ef-8c89-479187ab8a22/12939_Stone_Chess_King_Side_A_V2_l1.obj");
-        // loadPieceMesh(PieceMeshType::Knight, assetsRoot + "/Stones_Chess/Stone_Chess_Knight_Side_A_v2_L1.123c1f9d0092-be5e-4d15-8011-f958b64418c6/12943_Stone_Chess_Knight_Side_A_v2_l1.obj");
-        // loadPieceMesh(PieceMeshType::Queen, assetsRoot + "/Stones_Chess/Stone_Chess_Queen_Side_A_v2_L1.123ca8f563ae-8402-4fcd-b919-9d6c85add86d/12940_Stone_Chess_Queen_Side_A_V2_l1.obj");
-        // loadPieceMesh(PieceMeshType::Rook, assetsRoot + "/Stones_Chess/Stone_Chess_Rook_Side_A_v2_L1.123c700a78d6-9c36-43d8-94ef-18b0f9bdbf3d/12941_Stone_Chess_Rook_Side_A_V2_l1.obj");
         loadPieceMesh(PieceMeshType::Pawn, assetsRoot + "/Chess_Piece/pawn.obj");
         loadPieceMesh(PieceMeshType::Bishop, assetsRoot + "/Chess_Piece/bishop.obj");
         loadPieceMesh(PieceMeshType::King, assetsRoot + "/Chess_Piece/king.obj");
