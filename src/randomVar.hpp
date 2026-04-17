@@ -87,19 +87,18 @@ double getCauchy(double x0, double gamma) {
     return x0 + gamma * std::tan(M_PI * (u - 0.5));
 }
 
-// Loi de Poisson
+// Loi de Poisson (méthode de Knuth)
 // lambda augmente = transition expo -> Gauss
 int getPoisson(double lambda) {
     if (lambda <= 0) return 0;
 
-    // L est la valeur seuil
+    // L = seuil
     double L = std::exp(-lambda);
     int k = 0;
     double p = 1.0;
 
     do {
         k++;
-        // On multiplie par une uniforme [0, 1] à chaque itération
         p *= getRandom();
     } while (p > L);
 
