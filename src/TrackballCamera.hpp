@@ -55,7 +55,7 @@ public:
             // Rotations
             ViewMatrix = glm::rotate(ViewMatrix, glm::radians(m_fAngleX), glm::vec3(1, 0, 0));
             ViewMatrix = glm::rotate(ViewMatrix, glm::radians(m_fAngleY), glm::vec3(0, 1, 0));
-            ViewMatrix = glm::translate(ViewMatrix, glm::vec3(0, -1, 0));
+            ViewMatrix = glm::translate(ViewMatrix, glm::vec3(0, -2, 0));
             // Move to target
             ViewMatrix = glm::translate(ViewMatrix, -m_PiecePosition);
             return ViewMatrix;

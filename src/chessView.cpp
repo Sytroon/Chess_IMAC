@@ -74,11 +74,6 @@ void ChessView::drawGameOverPanel(Game& game) {
         
         ImGui::PopStyleColor();
         
-        // Back to main menu
-        if (ImGui::Button("Menu Principal")) {
-            game.returnToMenu();
-        }
-        
         ImGui::Separator();
     }
 }
